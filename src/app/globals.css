@@ -1,26 +1,185 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens. Dark, warm-neutral surfaces with a single crimson accent.
+ * Text colors are checked against --color-surface for WCAG AA (>= 4.5:1).
+ */
+@theme {
+  --color-bg: #0d0a0b;
+  --color-surface: #171314;
+  --color-surface-2: #211b1d;
+  --color-surface-3: #2c2427;
+  --color-line: #2e2629;
+  --color-fg: #f5f2f2;
+  --color-muted: #a89ea0; /* 7.3:1 on surface */
+  --color-subtle: #7d7376; /* icons / decorative only */
+
+  --color-primary: #c8102e; /* white text 5.9:1 */
+  --color-primary-hover: #b00e28;
+  --color-accent: #ff6b7a; /* red text on dark 6.6:1 */
+  --color-tonal: rgb(200 16 46 / 0.16);
+
+  --color-ok: #3dd68c;
+  --color-warn: #f5b544;
+  --color-protein: #ff6b7a;
+  --color-carbs: #f5b544;
+  --color-fat: #7fb2ff;
+
+  --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html[dir="rtl"] {
+  --font-sans: var(--font-arabic), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  min-height: 100dvh;
+  text-rendering: optimizeLegibility;
+}
+
+/* Visible keyboard focus everywhere, never on mouse click. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Typography ---------- */
+@utility title-lg {
+  @apply text-[1.75rem] leading-tight font-bold tracking-tight;
+}
+@utility title {
+  @apply text-xl leading-snug font-semibold tracking-tight;
+}
+@utility headline {
+  @apply text-[0.9375rem] leading-snug font-semibold;
+}
+@utility footnote {
+  @apply text-[0.8125rem] leading-snug text-muted;
+}
+@utility caption {
+  @apply text-xs leading-snug font-medium text-muted;
+}
+@utility section-label {
+  @apply px-4 pb-2 text-[0.8125rem] font-medium text-muted;
+}
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Surfaces ---------- */
+@utility card {
+  @apply rounded-2xl bg-surface p-4;
+}
+@utility list-group {
+  @apply overflow-hidden rounded-2xl bg-surface;
+}
+
+/* ---------- Buttons (min 44px tap target) ---------- */
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-[0.9375rem] font-semibold transition-colors duration-150
+    select-none disabled:cursor-not-allowed disabled:opacity-45;
+}
+@utility btn-primary {
+  @apply btn bg-primary text-white hover:bg-primary-hover active:bg-primary-hover;
+}
+@utility btn-secondary {
+  @apply btn bg-surface-2 text-fg hover:bg-surface-3;
+}
+@utility btn-tonal {
+  @apply btn bg-tonal text-accent hover:bg-primary/25;
+}
+@utility btn-plain {
+  @apply btn px-2 text-accent hover:bg-surface-2;
+}
+@utility btn-lg {
+  @apply min-h-[3.25rem] rounded-2xl text-base;
+}
+@utility icon-btn {
+  @apply inline-flex size-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-fg;
+}
+
+/* ---------- Forms ---------- */
+@utility label {
+  @apply mb-1.5 block text-[0.8125rem] font-medium text-muted;
+}
+@utility input {
+  @apply min-h-12 w-full rounded-xl border border-transparent bg-surface-2 px-3.5 text-base text-fg transition-colors
+    placeholder:text-subtle hover:border-line focus:border-accent focus:outline-none;
+}
+/* Selectable option (radio/checkbox inside a label). */
+@utility option {
+  @apply inline-flex min-h-11 cursor-pointer select-none items-center justify-center gap-2 rounded-xl bg-surface-2 px-4 text-[0.9375rem] font-medium text-fg transition-colors
+    hover:bg-surface-3 has-[:checked]:bg-tonal has-[:checked]:text-accent has-[:checked]:ring-1 has-[:checked]:ring-accent/50
+    has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent has-[:focus-visible]:outline-offset-2;
+}
+@utility option-card {
+  @apply flex cursor-pointer items-start gap-3 rounded-2xl bg-surface-2 p-4 transition-colors hover:bg-surface-3
+    has-[:checked]:bg-tonal has-[:checked]:ring-1 has-[:checked]:ring-accent/50
+    has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent has-[:focus-visible]:outline-offset-2;
+}
+
+@utility pill {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+/* Range slider */
+input[type="range"].range {
+  @apply h-11 w-full cursor-pointer appearance-none bg-transparent;
+}
+input[type="range"].range::-webkit-slider-runnable-track {
+  @apply h-1.5 rounded-full bg-surface-3;
+}
+input[type="range"].range::-moz-range-track {
+  @apply h-1.5 rounded-full bg-surface-3;
+}
+input[type="range"].range::-webkit-slider-thumb {
+  @apply -mt-[9px] size-6 appearance-none rounded-full border-4 border-bg bg-fg shadow;
+}
+input[type="range"].range::-moz-range-thumb {
+  @apply size-5 rounded-full border-4 border-bg bg-fg;
+}
+
+/* Native <dialog> bottom sheet */
+dialog.sheet {
+  @apply m-0 mt-auto w-full max-w-none bg-transparent p-0 text-fg sm:m-auto sm:max-w-lg;
+  max-height: 92dvh;
+}
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 0.6);
+  backdrop-filter: blur(2px);
+}
+dialog.sheet[open] > div {
+  animation: sheet-in 0.28s var(--ease-out-soft);
+}
+@keyframes sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@media print {
+  nav, header, .no-print { display: none !important; }
+  body { background: white; color: black; }
+  .card, .list-group { background: white; border: 1px solid #ddd; }
 }

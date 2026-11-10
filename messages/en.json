@@ -1,0 +1,577 @@
+{
+  "app": {
+    "name": "Fuelx",
+    "tagline": "Nutrition and training plans for athletes, built from your InBody scan."
+  },
+  "nav": {
+    "today": "Today",
+    "plan": "Plan",
+    "train": "Train",
+    "progress": "Progress",
+    "account": "Account",
+    "label": "Main"
+  },
+  "landing": {
+    "login": "Log in",
+    "kicker": "For athletes in Egypt",
+    "headline1": "Nutrition and training that",
+    "headline2": "keep up with you.",
+    "sub": "Upload your InBody scan and get a 4-week nutrition plan and training program built around your goal, with weekly check-ins that adjust everything automatically.",
+    "cta": "Start now",
+    "price": "{price} per month · cancel anytime",
+    "f": {
+      "inbody": {
+        "title": "InBody in seconds",
+        "body": "Snap a photo of your scan. AI reads the numbers, and you confirm them."
+      },
+      "plan": {
+        "title": "Month-long meal plan",
+        "body": "Exact macros for training and rest days, using Egyptian foods you actually eat."
+      },
+      "train": {
+        "title": "Your split, daily",
+        "body": "PPL, Upper/Lower, Full body and more. Sets, reps and RPE every day, with a deload week."
+      },
+      "track": {
+        "title": "Calories left, live",
+        "body": "Tick off meals or log any food and see exactly how much you have left."
+      },
+      "checkin": {
+        "title": "Weekly check-ins",
+        "body": "Weight, adherence and performance go in, and your macros adjust automatically."
+      },
+      "lang": {
+        "title": "عربي & English",
+        "body": "The whole app in Egyptian Arabic or English. Switch anytime."
+      }
+    },
+    "disclaimer": "FUELX gives general fitness and nutrition guidance and is not medical advice. Check with a doctor if you have a medical condition.",
+    "featuresTitle": "Everything an athlete needs in one app",
+    "ctaTitle": "Your first 4-week plan is ready in minutes."
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "login": "Log in",
+    "name": "Full name",
+    "passwordHint": "At least 8 characters.",
+    "adult": "I'm 18 or older and I understand this is not medical advice.",
+    "createAccount": "Create account",
+    "welcomeBack": "Welcome back",
+    "noAccount": "New here?",
+    "register": "Create an account",
+    "joinTitle": "Create your account",
+    "haveAccount": "Already have an account?",
+    "errors": {
+      "badCredentials": "Wrong email or password.",
+      "mustBeAdult": "You must be 18 or older.",
+      "passwordShort": "Password must be at least 8 characters.",
+      "invalid": "Please check your details.",
+      "emailTaken": "An account with this email already exists."
+    },
+    "loginSubtitle": "Log in to see today's plan.",
+    "joinSubtitle": "Your plan is ready a few minutes after signing up."
+  },
+  "onboarding": {
+    "title": "Build your profile",
+    "subtitle": "Two minutes. We'll use this to set your calories, macros and training.",
+    "steps": {
+      "about": "About you",
+      "goal": "Your goal",
+      "food": "Food",
+      "training": "Training"
+    },
+    "sport": "Sport",
+    "sportPlaceholder": "e.g. Football, Bodybuilding, CrossFit",
+    "sex": "Sex",
+    "sexes": {
+      "MALE": "Male",
+      "FEMALE": "Female"
+    },
+    "birthDate": "Date of birth",
+    "height": "Height (cm)",
+    "goal": "Main goal",
+    "goals": {
+      "CUT": {
+        "title": "Cut",
+        "body": "Lose fat and keep your muscle."
+      },
+      "BULK": {
+        "title": "Bulk",
+        "body": "Build muscle with a controlled surplus."
+      },
+      "RECOMP": {
+        "title": "Recomp",
+        "body": "Lose fat and build muscle at the same time."
+      },
+      "PERFORMANCE": {
+        "title": "Performance",
+        "body": "Fuel competition and hard training."
+      },
+      "MAINTAIN": {
+        "title": "Maintain",
+        "body": "Hold your current physique."
+      }
+    },
+    "targetWeight": "Target weight (kg, optional)",
+    "intensity": "Training intensity",
+    "intensities": {
+      "LOW": "Low",
+      "MODERATE": "Moderate",
+      "HIGH": "High",
+      "VERY_HIGH": "Very high"
+    },
+    "mealsPerDay": "Meals per day",
+    "allergies": "Allergies",
+    "allergyOptions": {
+      "DAIRY": "Dairy",
+      "EGGS": "Eggs",
+      "NUTS": "Nuts",
+      "GLUTEN": "Gluten",
+      "SEAFOOD": "Seafood"
+    },
+    "dietaryPrefs": "Preferences",
+    "prefOptions": {
+      "VEGETARIAN": "Vegetarian",
+      "NO_RED_MEAT": "No red meat"
+    },
+    "split": "Preferred split",
+    "splits": {
+      "PPL": {
+        "title": "Push / Pull / Legs",
+        "body": "Best for 3 or 6 days"
+      },
+      "UPPER_LOWER": {
+        "title": "Upper / Lower",
+        "body": "Best for 4 days"
+      },
+      "FULL_BODY": {
+        "title": "Full body",
+        "body": "Best for 2–3 days"
+      },
+      "BRO_SPLIT": {
+        "title": "Bro split",
+        "body": "One muscle group a day, 5 days"
+      },
+      "ARNOLD": {
+        "title": "Arnold split",
+        "body": "Chest/back, shoulders/arms, legs"
+      }
+    },
+    "weekdays": "Training days",
+    "days": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    },
+    "weekdaysHint": "Pick 2–6 days.",
+    "experience": "Experience",
+    "experiences": {
+      "BEGINNER": "Beginner",
+      "INTERMEDIATE": "Intermediate",
+      "ADVANCED": "Advanced"
+    },
+    "equipment": "Equipment",
+    "equipments": {
+      "GYM": "Full gym",
+      "DUMBBELLS": "Dumbbells only",
+      "HOME": "Bodyweight / home"
+    },
+    "sessionMinutes": "Session length",
+    "minutes": "{n} min",
+    "injuries": "Injuries to work around",
+    "injuryOptions": {
+      "SHOULDER": "Shoulder",
+      "KNEE": "Knee",
+      "LOWER_BACK": "Lower back",
+      "ELBOW": "Elbow",
+      "WRIST": "Wrist"
+    },
+    "errors": {
+      "invalid": "Please complete all required fields.",
+      "weekdays": "Choose between 2 and 6 training days.",
+      "mustBeAdult": "You must be 18 or older."
+    },
+    "back": "Back",
+    "next": "Next",
+    "finish": "Save & continue",
+    "stepOf": "Step {n} of {total}"
+  },
+  "billing": {
+    "title": "Subscription",
+    "success": "Payment received. Your subscription is active.",
+    "failed": "The payment didn't go through. Please try again.",
+    "monthly": "Monthly plan",
+    "status": {
+      "PENDING": "Pending",
+      "ACTIVE": "Active",
+      "PAST_DUE": "Payment due",
+      "CANCELED": "Canceled",
+      "EXPIRED": "Expired"
+    },
+    "endsOn": "Access ends on {date}.",
+    "graceUntil": "Renewal failed. Update your payment by {date} to keep access.",
+    "renewsOn": "Renews on {date}.",
+    "card": "Saved card: {pan}",
+    "continueSetup": "Continue setup",
+    "addInbody": "Add your InBody",
+    "goToday": "Go to today",
+    "cancel": "Cancel renewal",
+    "resume": "Resume",
+    "perMonth": "/ month",
+    "features": {
+      "f1": "InBody photo reading with AI",
+      "f2": "4-week nutrition plan using Egyptian foods",
+      "f3": "Daily training from your preferred split",
+      "f4": "Daily calorie and macro tracker",
+      "f5": "Weekly check-ins with automatic adjustments"
+    },
+    "demoMode": "Demo mode: payments are turned off, so every feature is free to try.",
+    "devMode": "Dev mode: Paymob keys aren't set, so payment is simulated.",
+    "secure": "Secure payment by Paymob. Cards, wallets and more.",
+    "invoices": "Payments",
+    "paymentStatus": {
+      "SUCCESS": "Paid",
+      "FAILED": "Failed",
+      "PENDING": "Pending"
+    },
+    "phone": "Mobile number",
+    "pay": "Subscribe with Paymob",
+    "errors": {
+      "phone": "Enter a valid Egyptian mobile number.",
+      "alreadyActive": "Your subscription is already active.",
+      "paymentsUnavailable": "Payments are unavailable right now. Please try again later."
+    },
+    "back": "Account"
+  },
+  "settings": {
+    "title": "Account",
+    "name": "Name",
+    "phone": "Mobile number",
+    "addBack": "Add workout calories back",
+    "addBackHint": "Your targets already include planned training. Turn this on to add the estimated calories from each finished workout to that day's carbs.",
+    "saved": "Saved.",
+    "invalid": "Please check your details.",
+    "save": "Save",
+    "profileSaved": "Profile saved. Changes apply to your next plan.",
+    "editProfile": "Edit profile & training",
+    "editProfileHint": "Goal, food, split and equipment",
+    "subscription": "Subscription",
+    "subscriptionHint": "Plan, renewal and payments",
+    "logout": "Log out",
+    "disclaimer": "FUELX gives general guidance and is not medical advice.",
+    "account": "Account",
+    "planSection": "Plan"
+  },
+  "today": {
+    "addFood": "Log food",
+    "searchFood": "Search foods… (foul, chicken, rice)",
+    "per100": "{kcal} kcal · P{p} /100g",
+    "noResults": "No results",
+    "customFood": "Add custom food",
+    "grams": "Grams",
+    "meal": "Meal",
+    "slots": {
+      "BREAKFAST": "Breakfast",
+      "LUNCH": "Lunch",
+      "DINNER": "Dinner",
+      "SNACK": "Snack"
+    },
+    "back": "Back",
+    "log": "Log it",
+    "customHint": "Values per 100 g",
+    "foodName": "Food name",
+    "macro": {
+      "kcal": "kcal",
+      "proteinG": "P",
+      "carbsG": "C",
+      "fatG": "F"
+    },
+    "save": "Save",
+    "blockDone": "Block complete",
+    "blockDoneBody": "Your 4-week block is done. Add a new InBody scan to build your next plan.",
+    "newScan": "New InBody scan",
+    "left": "{n} left",
+    "over": "{n} over",
+    "title": "Today",
+    "dayType": {
+      "TRAINING": "Training day",
+      "REST": "Rest day"
+    },
+    "week": "Week {n, number}",
+    "checkinDue": "Week {week} check-in is due",
+    "kcalLeft": "kcal left",
+    "kcalOver": "kcal over",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "addedBack": "+{n} kcal added back from training",
+    "todaysWorkout": "Today's workout",
+    "exercises": "{n, number} exercises",
+    "deload": "Deload",
+    "done": "Done",
+    "start": "Start",
+    "restDay": "Recover, go for a walk, and hit your protein.",
+    "meals": "Today's meals",
+    "extraFoods": "Other foods",
+    "markEaten": "Mark as eaten",
+    "unmarkEaten": "Unmark",
+    "remove": "Remove",
+    "open": "Open",
+    "summary": "Calories and macros today",
+    "eatenOf": "{eaten} of {target} kcal eaten",
+    "restDayTitle": "Rest day",
+    "less": "Less",
+    "more": "More"
+  },
+  "plan": {
+    "title": "Your plan",
+    "range": "{from} → {to}",
+    "print": "Print",
+    "week": "Week {n}",
+    "dayType": {
+      "TRAINING": "Training day",
+      "REST": "Rest day"
+    },
+    "slots": {
+      "BREAKFAST": "Breakfast",
+      "LUNCH": "Lunch",
+      "DINNER": "Dinner",
+      "SNACK": "Snack"
+    },
+    "grocery": "Grocery list for this week",
+    "weeks": "Plan weeks",
+    "days": "Days",
+    "today": "Today"
+  },
+  "train": {
+    "title": "Training",
+    "splits": {
+      "PPL": "Push / Pull / Legs",
+      "UPPER_LOWER": "Upper / Lower",
+      "FULL_BODY": "Full body",
+      "BRO_SPLIT": "Bro split",
+      "ARNOLD": "Arnold split"
+    },
+    "history": "History",
+    "week": "Week {n}",
+    "deloadNote": "Deload week: fewer sets and lighter effort so you recover and come back stronger.",
+    "done": "Done",
+    "today": "Today",
+    "focus": {
+      "PUSH": "Push",
+      "PULL": "Pull",
+      "LEGS": "Legs",
+      "UPPER": "Upper body",
+      "LOWER": "Lower body",
+      "FULL_A": "Full body A",
+      "FULL_B": "Full body B",
+      "CHEST": "Chest",
+      "BACK": "Back",
+      "SHOULDERS": "Shoulders",
+      "ARMS": "Arms",
+      "CHEST_BACK": "Chest & back",
+      "SHOULDERS_ARMS": "Shoulders & arms"
+    },
+    "noHistory": "No workouts logged yet.",
+    "e1rm": "Estimated 1RM",
+    "volume": "Volume (kg × reps)",
+    "setsCount": "{n, plural, one {# set} other {# sets}}",
+    "prs": "{n} PR",
+    "weeks": "Program weeks",
+    "deload": "Deload",
+    "exercise": "Exercise",
+    "chartEmpty": "Log this exercise in two sessions to see a trend.",
+    "sessions": "Sessions",
+    "minutes": "{n} min"
+  },
+  "workout": {
+    "start": "Start workout",
+    "notToday": "Upcoming session",
+    "progress": "{done}/{total} sets",
+    "finished": "Finished",
+    "rest": "rest {s}s",
+    "last": "Last",
+    "kg": "kg",
+    "reps": "reps",
+    "finish": "Finish workout",
+    "resting": "Rest",
+    "skip": "Skip",
+    "inProgress": "In progress",
+    "howTo": "How to do it",
+    "set": "Set",
+    "done": "Done",
+    "kgFor": "Weight in kg, set {set}, {name}",
+    "repsFor": "Reps, set {set}, {name}",
+    "logSet": "Log set {set}, {name}",
+    "pr": "Personal record",
+    "prAnnounce": "New personal record!",
+    "restOver": "Rest is over. Next set."
+  },
+  "progress": {
+    "title": "Progress",
+    "checkins": "Check-ins",
+    "weight": "Weight",
+    "bodyFat": "Body fat",
+    "workouts": "Workouts",
+    "weightChart": "Body weight",
+    "compChart": "Body composition",
+    "smm": "Muscle (kg)",
+    "kcalChart": "Calorie targets by week",
+    "trainingDay": "Training",
+    "restDay": "Rest",
+    "scans": "InBody scans",
+    "chartEmpty": "Not enough data yet. Your trend appears after your next check-in.",
+    "history": "History",
+    "smmShort": "Muscle"
+  },
+  "inbody": {
+    "title": "InBody scan",
+    "subtitlePlan": "Upload a photo of your InBody result or type the numbers in. We'll build your 4-week plan from it.",
+    "subtitleCheckin": "Add a fresh scan to this week's check-in.",
+    "errors": {
+      "NO_FILE": "Choose an image.",
+      "UNSUPPORTED_TYPE": "Use a JPG, PNG or WEBP image.",
+      "TOO_LARGE": "Image is too large (max 8 MB).",
+      "AI_DISABLED": "Photo reading isn't available. Enter the numbers below.",
+      "EXTRACTION_FAILED": "We couldn't read the photo. Enter the numbers below.",
+      "SUBSCRIPTION_REQUIRED": "Subscription required.",
+      "UNAUTHORIZED": "Please log in again.",
+      "invalid": "Please check the values.",
+      "planFailed": "We couldn't build your plan. Please try again."
+    },
+    "notInbody": "This doesn't look like an InBody sheet. Check the values carefully.",
+    "lowConfidence": "Some values were hard to read. Please double-check them.",
+    "modes": {
+      "IMAGE": "Photo",
+      "MANUAL": "Manual"
+    },
+    "aiDisabled": "Photo reading is off. Enter your numbers manually.",
+    "reading": "Reading your scan…",
+    "replacePhoto": "Use another photo",
+    "uploadPhoto": "Upload InBody photo",
+    "uploadHint": "Flat, well-lit, whole sheet visible",
+    "reviewHint": "Review and correct the values, then confirm.",
+    "fields": {
+      "weightKg": "Weight",
+      "skeletalMuscleMassKg": "Skeletal muscle mass",
+      "bodyFatMassKg": "Body fat mass",
+      "bodyFatPct": "Body fat",
+      "fatFreeMassKg": "Fat-free mass",
+      "bmrKcal": "BMR",
+      "totalBodyWaterL": "Total body water",
+      "visceralFatLevel": "Visceral fat level"
+    },
+    "optionalHint": "Only weight is required. Body fat and fat-free mass make your calories much more accurate.",
+    "building": "Building your plan…",
+    "confirmBuild": "Confirm & build my plan",
+    "confirm": "Confirm scan",
+    "method": "Entry method",
+    "photoAlt": "Your uploaded InBody sheet"
+  },
+  "checkin": {
+    "title": "Weekly check-in",
+    "weight": "Morning body weight (kg)",
+    "fromScan": "Taken from your new InBody scan.",
+    "weightHint": "Weigh in after waking, before eating.",
+    "addScan": "Or add an InBody scan",
+    "scores": {
+      "adherence": "Diet adherence",
+      "energy": "Energy",
+      "hunger": "Hunger",
+      "sleep": "Sleep quality",
+      "performance": "Training performance"
+    },
+    "low": {
+      "adherence": "Off plan",
+      "energy": "Drained",
+      "hunger": "Not hungry",
+      "sleep": "Poor",
+      "performance": "Weak"
+    },
+    "high": {
+      "adherence": "Perfect",
+      "energy": "Great",
+      "hunger": "Starving",
+      "sleep": "Great",
+      "performance": "Strong"
+    },
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "Anything we should know? Injuries, travel, competition…",
+    "errors": {
+      "invalid": "Please check your inputs.",
+      "NO_PLAN": "You don't have an active plan.",
+      "NOT_DUE": "Your check-in isn't due yet."
+    },
+    "analyzing": "Analyzing your week…",
+    "submit": "Submit check-in",
+    "weekTitle": "Week {week} check-in",
+    "nextOn": "Week {week} check-in opens on {date}.",
+    "blockComplete": "Your 4-week block is complete. Add a new InBody scan to start the next one.",
+    "newBlock": "Start next block",
+    "history": "Previous check-ins",
+    "resultTitle": "Week {week} results",
+    "rate": "weight / week",
+    "sessions": "sessions done",
+    "reasons": {
+      "LOW_ADHERENCE": "Macros unchanged: focus on sticking to the plan first.",
+      "ON_TRACK": "On track: macros unchanged.",
+      "TOO_SLOW_OR_GAINING": "Above your target range: calories reduced.",
+      "TOO_FAST_OR_LOSING": "Below your target range: calories increased."
+    },
+    "newTargets": "New targets: {training} kcal on training days, {rest} kcal on rest days.",
+    "seePlan": "See next week's plan",
+    "howWasWeek": "How was your week?",
+    "weightShort": "Weight"
+  },
+  "followup": {
+    "LOW_ADHERENCE": "Adherence was low this week, so we kept your macros the same. Weigh your food and prep meals ahead to hit your numbers.",
+    "ON_TRACK": "You're right on target. Same macros, same effort.",
+    "TOO_SLOW_OR_GAINING": "Your weight trend was above target, so we cut {delta} kcal a day, mostly from carbs. Protein stays the same.",
+    "TOO_FAST_OR_LOSING": "Your weight trend was below target, so we added {delta} kcal a day to protect muscle and performance.",
+    "training": "You completed {pct}% of your planned sessions.",
+    "newBlock": "Block complete! Add a new InBody scan to build your next 4 weeks."
+  },
+  "email": {
+    "reminderSubject": "Week {week} check-in is ready",
+    "reminderLateSubject": "Reminder: your weekly check-in is still open",
+    "reminderBody": "Hi {name},\n\nYour week {week} check-in is due. It takes about a minute and updates your macros for next week.\n\n{link}\n\nFUELX",
+    "paymentFailedSubject": "We couldn't renew your subscription",
+    "paymentFailedBody": "Hi {name},\n\nWe couldn't charge your card for this month's renewal. You have 3 more days of access. Renew here:\n\n{link}\n\nFUELX"
+  },
+  "supplements": {
+    "question": "Do you use supplements?",
+    "yes": "Yes, include mine",
+    "no": "No, food only",
+    "pickHint": "Tick only the supplements you already have. Only these will go into your plan.",
+    "noneHint": "Your plan will use whole foods only. You can change this anytime in Account.",
+    "inMeals": "Built into your meals as a shake",
+    "onSchedule": "Added to your daily schedule",
+    "safety": "Check with your doctor first if you have a medical condition or take medication. Don't take caffeine if you're sensitive to it.",
+    "title": "Supplements",
+    "manageHint": "Choose which supplements your plan can use",
+    "save": "Save supplements",
+    "saved": "Saved. Your plan from this week on was updated.",
+    "rebuilding": "Updating your plan…",
+    "errors": {
+      "pickOne": "Pick at least one supplement, or choose \"No, food only\".",
+      "invalid": "Complete your profile first."
+    },
+    "none": "Food-only plan: no supplements.",
+    "change": "Change",
+    "todayTitle": "Today's supplements",
+    "legendMeals": "in your meals",
+    "legendSchedule": "take separately"
+  },
+  "common": {
+    "skip": "Skip to content",
+    "switchLanguage": "Switch language to Arabic",
+    "close": "Close",
+    "back": "Back",
+    "seeAll": "See all"
+  }
+}

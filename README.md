@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FUELX: athlete nutrition & training
 
-## Getting Started
+Next.js 15 web app in Egyptian Arabic (RTL) and English. Athletes subscribe through **Paymob** and add an **InBody** scan, either a photo read by **Gemini Flash** or typed in by hand. The app then builds:
 
-First, run the development server:
+- a 4-week nutrition plan, with separate training-day and rest-day macros
+- a training program based on the athlete's chosen split
+- a daily tracker showing calories and macros left for the day
+- weekly check-ins that adjust calories automatically
+
+## Setup
+
+### Everything in Docker
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env          # then fill in the values (DATABASE_URL is overridden inside compose)
+docker compose up -d --build  # Postgres + migrations/seed + app on :3000 + daily cron jobs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Local development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env          # then fill in the values
+docker compose up -d db       # Postgres only, on :5432 (or point DATABASE_URL at your own)
+npm install
+npx prisma migrate deploy
+npm run db:seed               # exercise library + Egyptian food database
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Without `GEMINI_API_KEY`:** photo reading is disabled (manual entry only). Meal plans then come from the built-in deterministic builder.
+- **Without Paymob keys:** checkout is simulated. This works only when `NODE_ENV` is not `production`.
 
-## Learn More
+## Paymob configuration
 
-To learn more about Next.js, take a look at the following resources:
+1. Create an **online card integration**. Set its *Transaction processed callback* to `https://<your-domain>/api/paymob/webhook`. Also enable card tokenization (saved cards).
+2. Create a **MOTO integration** for charging saved cards on renewal. Its ID goes in `PAYMOB_MOTO_INTEGRATION_ID`.
+3. Copy your secret key, public key, HMAC secret and API key into `.env`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Every webhook is HMAC-SHA512 verified, and applying a payment is idempotent (each transaction is applied once).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scheduled jobs (run daily)
 
-## Deploy on Vercel
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/checkin-reminders
+curl -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/renew-subscriptions
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+On Vercel, add both routes to `vercel.json` crons. Otherwise use system cron.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm test` | Unit tests: macros, weekly adjustment, meal builder, training generator, progress, Paymob HMAC |
+| `npm run i18n:check` | Ensures `messages/en.json` and `messages/ar-EG.json` have the same keys |
+| `npm run db:seed` | Upserts exercises and foods |
+
+## Where things live
+
+- `src/lib/nutrition/`: calorie and macro math (`calc.ts`), weekly adjustment (`adjust.ts`), meal builder (`meals.ts`), daily remaining (`remaining.ts`, `daily.ts`)
+- `src/lib/training/`: splits, program generator (4 weeks, week 4 deload), progress (Epley 1RM, PRs, double progression)
+- `src/lib/ai/gemini.ts`: InBody extraction, meal weeks (foods restricted to the database; macros recomputed server-side), follow-up messages
+- `src/lib/plan/`: plan creation and weekly check-in orchestration
+- `src/lib/payments/paymob.ts` and `src/lib/subscription.ts`: payments and access
+- `src/app/[locale]/`: pages (`(app)` requires login; `(app)/(paid)` also requires an active subscription)
+
+The app gives general fitness guidance and is not medical advice. Users must be 18 or older.

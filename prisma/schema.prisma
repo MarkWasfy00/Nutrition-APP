@@ -1,0 +1,376 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Goal {
+  CUT
+  BULK
+  RECOMP
+  PERFORMANCE
+  MAINTAIN
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum Intensity {
+  LOW
+  MODERATE
+  HIGH
+  VERY_HIGH
+}
+
+enum ScanSource {
+  IMAGE
+  MANUAL
+}
+
+enum SubStatus {
+  PENDING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PlanStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum Split {
+  PPL
+  UPPER_LOWER
+  FULL_BODY
+  BRO_SPLIT
+  ARNOLD
+}
+
+enum Experience {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Equipment {
+  GYM
+  HOME
+  DUMBBELLS
+}
+
+enum MealSlot {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String
+  name                String
+  locale              String    @default("ar-EG")
+  phone               String?
+  addBackExerciseKcal Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+
+  profile      AthleteProfile?
+  trainingPref TrainingPreference?
+  subscription Subscription?
+  scans        InBodyScan[]
+  payments     Payment[]
+  plans        NutritionPlan[]
+  workouts     WorkoutLog[]
+  foodLogs     FoodLog[]
+  checkIns     CheckIn[]
+  customFoods  FoodItem[]
+}
+
+model AthleteProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sport               String
+  trainingDaysPerWeek Int
+  intensity           Intensity
+  sex                 Sex
+  birthDate           DateTime
+  heightCm            Float
+  goal                Goal
+  targetWeightKg      Float?
+  dietaryPrefs        String[]
+  allergies           String[]
+  mealsPerDay         Int       @default(4)
+  /// Opt-in: when false the plan is food-only
+  useSupplements      Boolean   @default(false)
+  /// Supplement ids the athlete owns (see src/lib/nutrition/supplements.ts)
+  supplements         String[]  @default([])
+}
+
+model InBodyScan {
+  id                   String     @id @default(cuid())
+  userId               String
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  takenAt              DateTime   @default(now())
+  source               ScanSource
+  imageUrl             String?
+  weightKg             Float
+  skeletalMuscleMassKg Float?
+  bodyFatMassKg        Float?
+  bodyFatPct           Float?
+  fatFreeMassKg        Float?
+  bmrKcal              Float?
+  totalBodyWaterL      Float?
+  visceralFatLevel     Float?
+  raw                  Json?
+  confirmed            Boolean    @default(false)
+
+  plans NutritionPlan[]
+}
+
+model Subscription {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             SubStatus @default(PENDING)
+  planCode           String    @default("monthly")
+  amountCents        Int
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  graceUntil         DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  cardToken          String?
+  cardMaskedPan      String?
+  paymobOrderId      String?
+  lastTransactionId  String?
+  updatedAt          DateTime  @updatedAt
+}
+
+model Payment {
+  id                  String        @id @default(cuid())
+  userId              String
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCents         Int
+  currency            String        @default("EGP")
+  status              PaymentStatus @default(PENDING)
+  isRenewal           Boolean       @default(false)
+  paymobOrderId       String?
+  paymobTransactionId String?       @unique
+  raw                 Json?
+  createdAt           DateTime      @default(now())
+
+  @@index([paymobOrderId])
+}
+
+model NutritionPlan {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scanId    String
+  scan      InBodyScan @relation(fields: [scanId], references: [id])
+  goal      Goal
+  status    PlanStatus @default(ACTIVE)
+  startDay  String // YYYY-MM-DD (Africa/Cairo)
+  endDay    String
+  /// { kcal, proteinG, carbsG, fatG }
+  training  Json
+  rest      Json
+  createdAt DateTime   @default(now())
+
+  weeks    PlanWeek[]
+  program  TrainingProgram?
+  checkIns CheckIn[]
+
+  @@index([userId, status])
+}
+
+model PlanWeek {
+  id          String        @id @default(cuid())
+  planId      String
+  plan        NutritionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  weekNumber  Int
+  training    Json
+  rest        Json
+  /// PlanDay[] (see src/lib/nutrition/types.ts)
+  days        Json
+  /// GroceryItem[]
+  groceryList Json
+
+  @@unique([planId, weekNumber])
+}
+
+model TrainingPreference {
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  split          Split
+  /// 0 = Sunday ... 6 = Saturday
+  weekdays       Int[]
+  sessionMinutes Int        @default(60)
+  experience     Experience
+  equipment      Equipment
+  /// SHOULDER | KNEE | LOWER_BACK | ELBOW | WRIST
+  injuries       String[]
+}
+
+model Exercise {
+  id             String      @id
+  nameEn         String
+  nameAr         String
+  muscle         String
+  equipment      Equipment[]
+  isCompound     Boolean
+  isLowerBody    Boolean
+  stresses       String[]
+  instructionsEn String
+  instructionsAr String
+  videoUrl       String?
+
+  programExercises ProgramExercise[]
+  sets             SetLog[]
+}
+
+model TrainingProgram {
+  id     String        @id @default(cuid())
+  planId String        @unique
+  plan   NutritionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  split  Split
+  days   ProgramDay[]
+}
+
+model ProgramDay {
+  id         String          @id @default(cuid())
+  programId  String
+  program    TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  weekNumber Int
+  day        String // YYYY-MM-DD
+  focus      String
+  isDeload   Boolean         @default(false)
+
+  exercises ProgramExercise[]
+  workouts  WorkoutLog[]
+
+  @@index([programId, day])
+}
+
+model ProgramExercise {
+  id         String     @id @default(cuid())
+  dayId      String
+  day        ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise   @relation(fields: [exerciseId], references: [id])
+  order      Int
+  sets       Int
+  repMin     Int
+  repMax     Int
+  targetRpe  Float
+  restSec    Int
+}
+
+model WorkoutLog {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programDayId String?
+  programDay   ProgramDay? @relation(fields: [programDayId], references: [id], onDelete: SetNull)
+  day          String
+  startedAt    DateTime    @default(now())
+  finishedAt   DateTime?
+  durationMin  Int?
+  kcalBurned   Int?
+  notes        String?
+
+  sets SetLog[]
+
+  @@index([userId, day])
+}
+
+model SetLog {
+  id         String     @id @default(cuid())
+  workoutId  String
+  workout    WorkoutLog @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise   @relation(fields: [exerciseId], references: [id])
+  setNumber  Int
+  reps       Int
+  weightKg   Float
+  rpe        Float?
+  isPR       Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+
+  @@index([exerciseId])
+}
+
+model FoodItem {
+  id       String  @id @default(cuid())
+  nameEn   String
+  nameAr   String
+  category String
+  kcal     Float
+  proteinG Float
+  carbsG   Float
+  fatG     Float
+  /// null = global seeded food, otherwise a user's custom food
+  userId   String?
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  logs FoodLog[]
+}
+
+model FoodLog {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day         String
+  slot        MealSlot
+  name        String
+  foodItemId  String?
+  foodItem    FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+  planMealKey String?
+  grams       Float?
+  kcal        Float
+  proteinG    Float
+  carbsG      Float
+  fatG        Float
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, day])
+}
+
+model CheckIn {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId            String
+  plan              NutritionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  weekNumber        Int
+  createdAt         DateTime      @default(now())
+  bodyWeightKg      Float
+  scanId            String?
+  adherence         Int
+  energy            Int
+  hunger            Int
+  sleep             Int
+  performance       Int
+  notes             String?
+  trainingAdherence Float
+  /// Adjustment (see src/lib/nutrition/adjust.ts)
+  adjustment        Json
+  followUp          String
+
+  @@unique([planId, weekNumber])
+}
