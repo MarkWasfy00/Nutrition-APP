@@ -20,7 +20,8 @@ const FIELDS = [
 
 type Values = Partial<Record<(typeof FIELDS)[number][0], string>>;
 
-export function InBodyForm({ purpose, aiEnabled }: { purpose: "plan" | "checkin"; aiEnabled: boolean }) {
+/** `athleteId` is set when a coach enters the scan for one of their athletes. */
+export function InBodyForm({ purpose, aiEnabled, athleteId }: { purpose: "plan" | "checkin"; aiEnabled: boolean; athleteId?: string }) {
   const t = useTranslations("inbody");
   const [mode, setMode] = useState<"IMAGE" | "MANUAL">(aiEnabled ? "IMAGE" : "MANUAL");
   const [values, setValues] = useState<Values>({});
@@ -34,6 +35,7 @@ export function InBodyForm({ purpose, aiEnabled }: { purpose: "plan" | "checkin"
     setExtracting(true); setNotice(null);
     const fd = new FormData();
     fd.append("image", file);
+    if (athleteId) fd.append("athleteId", athleteId);
     try {
       const res = await fetch("/api/inbody/extract", { method: "POST", body: fd });
       const data = (await res.json()) as { imageUrl?: string; extraction?: InBodyExtraction | null; error?: string };
@@ -95,6 +97,7 @@ export function InBodyForm({ purpose, aiEnabled }: { purpose: "plan" | "checkin"
         <form action={action} className="space-y-5">
           <input type="hidden" name="source" value={mode === "IMAGE" && imageUrl ? "IMAGE" : "MANUAL"} />
           <input type="hidden" name="purpose" value={purpose} />
+          {athleteId && <input type="hidden" name="athleteId" value={athleteId} />}
           {imageUrl && mode === "IMAGE" && <input type="hidden" name="imageUrl" value={imageUrl} />}
           {mode === "IMAGE" && <p className="headline px-1">{t("reviewHint")}</p>}
           <div className="card grid grid-cols-2 gap-x-3 gap-y-4">

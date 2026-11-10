@@ -12,26 +12,31 @@ export function hasAccess(sub: Pick<Subscription, "status" | "currentPeriodEnd" 
   return false;
 }
 
-/** Demo mode: PAYMENTS_DISABLED="true" gives every user full access and hides checkout. */
+/** Demo mode: PAYMENTS_DISABLED="true" gives every team full access and hides checkout. */
 export const paymentsDisabled = () => process.env.PAYMENTS_DISABLED === "true";
 
-export async function userHasAccess(userId: string) {
+/** Access is per team: every member of a team with an active subscription can use the app. */
+export async function teamHasAccess(teamId: string | null | undefined) {
+  if (!teamId) return false;
   if (paymentsDisabled()) return true;
-  return hasAccess(await db.subscription.findUnique({ where: { userId } }));
+  return hasAccess(await db.subscription.findUnique({ where: { teamId } }));
 }
 
 export type TxnResult = { transactionId: string; success: boolean; orderId?: string | null; raw: unknown };
 
 /**
- * Idempotent: a payment/transaction is applied once. Success extends the period by 30 days
- * from the later of now / current period end.
+ * Idempotent: a payment/transaction is applied once.
+ * - Subscription / renewal: extends the period by 30 days from the later of now / current period end
+ *   and sets the team's seats to the paid seat count.
+ * - Seat top-up: adds the paid seats; the period is unchanged.
  */
 export async function applyTransaction(paymentId: string, txn: TxnResult): Promise<"applied" | "failed" | "duplicate" | "unknown"> {
   try {
     return await db.$transaction(async (tx) => {
       const payment = await tx.payment.findUnique({ where: { id: paymentId } });
-      if (!payment) return "unknown";
+      if (!payment || !payment.teamId) return "unknown";
       if (payment.status !== "PENDING") return "duplicate";
+      const teamId = payment.teamId;
       const now = new Date();
 
       await tx.payment.update({
@@ -44,7 +49,7 @@ export async function applyTransaction(paymentId: string, txn: TxnResult): Promi
         },
       });
 
-      const sub = await tx.subscription.findUnique({ where: { userId: payment.userId } });
+      const sub = await tx.subscription.findUnique({ where: { teamId } });
       if (!txn.success) {
         if (payment.isRenewal && sub) {
           await tx.subscription.update({
@@ -55,17 +60,23 @@ export async function applyTransaction(paymentId: string, txn: TxnResult): Promi
         return "failed";
       }
 
+      if (payment.isTopUp) {
+        await tx.team.update({ where: { id: teamId }, data: { seats: { increment: payment.seats } } });
+        return "applied";
+      }
+
       const start = sub?.currentPeriodEnd && sub.currentPeriodEnd > now ? sub.currentPeriodEnd : now;
       const end = new Date(start.getTime() + PERIOD_DAYS * DAY);
+      await tx.team.update({ where: { id: teamId }, data: { seats: payment.seats, nextSeats: null } });
       await tx.subscription.upsert({
-        where: { userId: payment.userId },
+        where: { teamId },
         create: {
-          userId: payment.userId, status: "ACTIVE", amountCents: payment.amountCents,
+          teamId, status: "ACTIVE", amountCents: payment.amountCents,
           currentPeriodStart: start, currentPeriodEnd: end, lastTransactionId: txn.transactionId, paymobOrderId: txn.orderId ?? null,
         },
         update: {
-          status: "ACTIVE", currentPeriodStart: start, currentPeriodEnd: end, graceUntil: null, cancelAtPeriodEnd: false,
-          lastTransactionId: txn.transactionId, paymobOrderId: txn.orderId ?? undefined,
+          status: "ACTIVE", amountCents: payment.amountCents, currentPeriodStart: start, currentPeriodEnd: end, graceUntil: null,
+          cancelAtPeriodEnd: false, lastTransactionId: txn.transactionId, paymobOrderId: txn.orderId ?? undefined,
         },
       });
       return "applied";

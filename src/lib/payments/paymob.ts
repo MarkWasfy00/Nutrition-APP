@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 const BASE = () => process.env.PAYMOB_BASE_URL || "https://accept.paymob.com";
 
 export const paymobEnabled = () => Boolean(process.env.PAYMOB_SECRET_KEY && process.env.PAYMOB_PUBLIC_KEY && process.env.PAYMOB_INTEGRATION_ID);
+/** Monthly price per athlete seat. */
 export const priceCents = () => Math.round(Number(process.env.SUBSCRIPTION_PRICE_EGP || 499) * 100);
 const appUrl = () => process.env.APP_URL || "http://localhost:3000";
 
@@ -11,7 +12,7 @@ type Billing = { name: string; email: string; phone: string };
 function billingData(b: Billing) {
   const [first, ...rest] = b.name.trim().split(/\s+/);
   return {
-    first_name: first || "Athlete", last_name: rest.join(" ") || "NA", email: b.email, phone_number: b.phone,
+    first_name: first || "Coach", last_name: rest.join(" ") || "NA", email: b.email, phone_number: b.phone,
     apartment: "NA", floor: "NA", street: "NA", building: "NA", city: "NA", state: "NA", country: "EG", postal_code: "NA",
   };
 }
@@ -28,14 +29,14 @@ async function post<T>(path: string, body: unknown, headers: Record<string, stri
 }
 
 /** Intention API -> Unified Checkout URL. `paymentId` comes back as the order's merchant reference. */
-export async function createIntention(opts: { paymentId: string; amountCents: number; billing: Billing }) {
+export async function createIntention(opts: { paymentId: string; amountCents: number; description: string; billing: Billing }) {
   const data = await post<{ client_secret: string; intention_order_id?: number | string }>(
     "/v1/intention/",
     {
       amount: opts.amountCents,
       currency: "EGP",
       payment_methods: [Number(process.env.PAYMOB_INTEGRATION_ID)],
-      items: [{ name: "Monthly subscription", amount: opts.amountCents, description: "Athlete nutrition & training plan", quantity: 1 }],
+      items: [{ name: "FUELX team subscription", amount: opts.amountCents, description: opts.description, quantity: 1 }],
       billing_data: billingData(opts.billing),
       special_reference: opts.paymentId,
       notification_url: `${appUrl()}/api/paymob/webhook`,

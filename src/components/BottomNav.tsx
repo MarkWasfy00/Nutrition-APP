@@ -1,25 +1,35 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ChartLine, CircleUser, Dumbbell, House, UtensilsCrossed } from "lucide-react";
+import { ChartLine, CircleUser, CreditCard, Dumbbell, House, Users, UtensilsCrossed, CalendarDays } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 
-const ITEMS = [
+type Item = { href: string; key: string; Icon: typeof House; also?: string[]; exact?: boolean };
+
+const ATHLETE: Item[] = [
   { href: "/today", key: "today", Icon: House },
   { href: "/plan", key: "plan", Icon: UtensilsCrossed },
   { href: "/train", key: "train", Icon: Dumbbell },
   { href: "/progress", key: "progress", Icon: ChartLine },
-  { href: "/settings", key: "account", Icon: CircleUser, also: ["/billing", "/onboarding"] },
-] as const;
+  { href: "/settings", key: "account", Icon: CircleUser, also: ["/onboarding"] },
+];
 
-export function BottomNav() {
+const COACH: Item[] = [
+  { href: "/coach", key: "athletes", Icon: Users, also: ["/coach/athletes"], exact: true },
+  { href: "/coach/team", key: "team", Icon: CalendarDays },
+  { href: "/billing", key: "billing", Icon: CreditCard },
+  { href: "/settings", key: "account", Icon: CircleUser },
+];
+
+export function BottomNav({ role }: { role: "COACH" | "ATHLETE" }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  const items = role === "COACH" ? COACH : ATHLETE;
   return (
     <nav aria-label={t("label")} className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
-      <ul className="mx-auto grid max-w-lg grid-cols-5">
-        {ITEMS.map(({ href, key, Icon, ...rest }) => {
-          const active = [href, ...("also" in rest ? rest.also : [])].some((p) => pathname.startsWith(p));
+      <ul className={`mx-auto grid max-w-lg ${items.length === 5 ? "grid-cols-5" : "grid-cols-4"}`}>
+        {items.map(({ href, key, Icon, also = [], exact }) => {
+          const active = (exact ? pathname === href : pathname.startsWith(href)) || also.some((p) => pathname.startsWith(p));
           return (
             <li key={href}>
               <Link

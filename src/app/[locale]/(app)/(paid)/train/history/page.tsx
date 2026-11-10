@@ -22,8 +22,11 @@ export default async function HistoryPage({ params, searchParams }: {
     orderBy: { startedAt: "asc" },
     include: { sets: { include: { exercise: true } }, programDay: true },
   });
+  // Strength trends only make sense for loaded lifts (sprints, jumps and holds have no e1RM).
   const exercises = new Map<string, string>();
-  workouts.forEach((w) => w.sets.forEach((s) => exercises.set(s.exerciseId, isAr ? s.exercise.nameAr : s.exercise.nameEn)));
+  workouts.forEach((w) => w.sets.forEach((s) => {
+    if (s.exercise.measure === "LOAD_REPS") exercises.set(s.exerciseId, isAr ? s.exercise.nameAr : s.exercise.nameEn);
+  }));
   const selected = (await searchParams).ex ?? [...exercises.keys()][0];
   const label = (d: string) => format.dateTime(new Date(`${d}T12:00:00Z`), { day: "numeric", month: "short" });
 
@@ -67,7 +70,7 @@ export default async function HistoryPage({ params, searchParams }: {
               <ListRow
                 key={w.id}
                 icon={<Dumbbell className="size-[1.125rem]" />}
-                title={w.programDay ? t(`focus.${w.programDay.focus}`) : "—"}
+                title={w.programDay ? (t.has(`focus.${w.programDay.focus}`) ? t(`focus.${w.programDay.focus}`) : w.programDay.focus) : "—"}
                 subtitle={`${label(w.day)} · ${t("setsCount", { n: w.sets.length })}${w.durationMin ? ` · ${t("minutes", { n: w.durationMin })}` : ""}`}
                 value={prs > 0 ? <span className="pill bg-warn/15 text-warn"><Trophy className="size-3.5" aria-hidden />{t("prs", { n: prs })}</span> : undefined}
               />

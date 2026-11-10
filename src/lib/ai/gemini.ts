@@ -1,5 +1,6 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
-import type { Goal } from "@prisma/client";
+import type { Goal, SeasonPhase } from "@prisma/client";
+import { sportName } from "../sports";
 import { FOOD_BY_ID, FOODS, foodFilter, foodName, snapGrams } from "../nutrition/foods";
 import { FOLLOW_UP_SYSTEM_PROMPT, MEAL_PLAN_SYSTEM_PROMPT } from "./prompts";
 import { buildWeekMeals, dayTotals, mealFromItems, mealSplit, scaleDay, scaleMacros, withinTolerance } from "../nutrition/meals";
@@ -8,9 +9,15 @@ import type { Adjustment } from "../nutrition/adjust";
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
+// AI_PROVIDER=ollama runs a local model (default Qwen3-VL 8B) through Ollama instead of Gemini.
+const ollamaSelected = () => process.env.AI_PROVIDER === "ollama";
+const OLLAMA_URL = () => (process.env.OLLAMA_URL || "http://localhost:11434").replace(/\/$/, "");
+const OLLAMA_MODEL = () => process.env.OLLAMA_MODEL || "qwen3-vl:8b-instruct";
+
 // Demo mode: AI is off unless AI_ENABLED=true. Everything then uses the built-in
 // meal builder, template follow-ups and manual InBody entry.
-export const geminiEnabled = () => process.env.AI_ENABLED === "true" && Boolean(process.env.GEMINI_API_KEY);
+export const geminiEnabled = () =>
+  process.env.AI_ENABLED === "true" && (ollamaSelected() || Boolean(process.env.GEMINI_API_KEY));
 
 let client: GoogleGenAI | null = null;
 function ai() {
@@ -20,7 +27,38 @@ function ai() {
 
 type GenOptions = { temperature?: number; system?: string; thinking?: ThinkingLevel; timeoutMs?: number };
 
-async function generateJson<T>(parts: object[], schema: object, opts: GenOptions = {}): Promise<T> {
+type Part = { text?: string; inlineData?: { mimeType: string; data: string } };
+
+async function generateJsonOllama<T>(parts: Part[], schema: object, opts: GenOptions): Promise<T> {
+  const messages: object[] = [];
+  if (opts.system) messages.push({ role: "system", content: opts.system });
+  messages.push({
+    role: "user",
+    content: parts.map((p) => p.text).filter(Boolean).join("\n\n"),
+    images: parts.flatMap((p) => (p.inlineData ? [p.inlineData.data] : [])),
+  });
+  const res = await fetch(`${OLLAMA_URL()}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL(),
+      messages,
+      format: schema,
+      stream: false,
+      think: false,
+      options: { temperature: opts.temperature ?? 0.4 },
+      keep_alive: "30m",
+    }),
+    // Local models are slower than Gemini, especially on first load; allow extra time.
+    signal: AbortSignal.timeout(Number(process.env.OLLAMA_TIMEOUT_MS) || Math.max(opts.timeoutMs ?? 60_000, 180_000)),
+  });
+  if (!res.ok) throw new Error(`Ollama ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = (await res.json()) as { message?: { content?: string } };
+  return JSON.parse(data.message?.content || "{}") as T;
+}
+
+async function generateJson<T>(parts: Part[], schema: object, opts: GenOptions = {}): Promise<T> {
+  if (ollamaSelected()) return generateJsonOllama<T>(parts, schema, opts);
   const res = await ai().models.generateContent({
     model: MODEL,
     contents: [{ role: "user", parts }],
@@ -93,14 +131,23 @@ type WeekMealOpts = {
   supplements: string[];
   locale: string;
   weekNumber: number;
+  /** Sport id (src/lib/sports.ts) */
   sport: string;
+  phase?: SeasonPhase;
   goal: Goal;
+};
+
+const PHASE_TEXT: Record<SeasonPhase, string> = {
+  OFF_SEASON: "off-season (building strength and body composition)",
+  PRE_SEASON: "pre-season (high training load, fuel hard sessions)",
+  IN_SEASON: "in-season (matches every week, recover and stay fresh)",
 };
 
 type GenMeal = { slot: Slot; name: string; items: { foodId: string; grams: number }[] };
 
 // Free-tier friendly: few requests in flight at once.
-const CONCURRENCY = Math.max(1, Number(process.env.GEMINI_CONCURRENCY) || 2);
+// A local GPU handles one request at a time best.
+const CONCURRENCY = Math.max(1, Number(process.env.GEMINI_CONCURRENCY) || (ollamaSelected() ? 1 : 2));
 
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
@@ -170,7 +217,7 @@ export async function generateWeekMealsAI(opts: WeekMealOpts): Promise<PlanDay[]
       return `${slot}: ~${Math.round(m.kcal)} kcal, P${Math.round(m.proteinG)} C${Math.round(m.carbsG)} F${Math.round(m.fatG)}`;
     }).join("\n");
     const rot = di + opts.weekNumber * 7;
-    return `Athlete: ${opts.sport}, goal ${opts.goal}. Plan ONE ${d.type === "TRAINING" ? "training" : "rest"} day (day ${di + 1} of week ${opts.weekNumber}).
+    return `Competitive ${sportName(opts.sport, "en")} athlete, ${PHASE_TEXT[opts.phase ?? "OFF_SEASON"]}, goal ${opts.goal}. Plan ONE ${d.type === "TRAINING" ? "training / match" : "rest"} day (day ${di + 1} of week ${opts.weekNumber}).
 Day target: ${t.kcal} kcal, protein ${t.proteinG} g, carbs ${t.carbsG} g, fat ${t.fatG} g.
 Exactly ${split.length} meals in this order, with these per-meal targets:
 ${meals}
@@ -215,6 +262,7 @@ Write each meal "name" in ${lang(opts.locale)}.`;
 export async function writeFollowUpAI(input: {
   locale: string;
   name: string;
+  sport: string;
   goal: Goal;
   weekNumber: number;
   adjustment: Adjustment;
@@ -231,7 +279,7 @@ export async function writeFollowUpAI(input: {
   if (!geminiEnabled()) return null;
   try {
     const res = await generateJson<{ message: string }>([{
-      text: `Write a short, motivating weekly check-in follow-up (max 90 words) for athlete ${input.name}, in ${lang(input.locale)}.
+      text: `Write a short, motivating weekly check-in follow-up (max 90 words) for ${sportName(input.sport, "en")} athlete ${input.name}, in ${lang(input.locale)}.
 Goal: ${input.goal}. Week ${input.weekNumber} done.
 Weight change: ${input.adjustment.ratePct}% (target ${input.adjustment.target.min}..${input.adjustment.target.max}%/week).
 Decision: ${input.adjustment.reason}, calorie change ${input.adjustment.kcalDelta} kcal/day.

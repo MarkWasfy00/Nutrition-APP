@@ -1,23 +1,30 @@
-import type { Equipment, Experience, Split } from "@prisma/client";
+import type { Equipment, ExerciseMeasure, Experience, SeasonPhase } from "@prisma/client";
 import { addDays, weekdayOf } from "../dates";
-import { FOCUS_SLOTS, MAJOR_MUSCLES, weekFocuses } from "./splits";
+import { sportCategory } from "../sports";
+import { ADVANCED_ONLY, DISTANCE_M } from "./library";
+import { COMBAT_EXTRAS, scheduleWeek, SESSION_SLOTS, weekSessions, type Role, type SessionType, type Slot } from "./sessions";
 
 export type LibraryExercise = {
   id: string;
+  /** movement pattern */
   muscle: string;
+  measure: ExerciseMeasure;
   equipment: Equipment[];
   isCompound: boolean;
   stresses: string[];
 };
 
 export type TrainingPrefInput = {
-  split: Split;
+  /** S&C weekdays, 0 = Sunday */
   weekdays: number[];
   sessionMinutes: number;
   experience: Experience;
   equipment: Equipment;
   injuries: string[];
 };
+
+/** Team / sport context the program is built around. */
+export type ProgramContext = { sport: string; phase: SeasonPhase; matchWeekdays: number[] };
 
 export type GeneratedExercise = {
   exerciseId: string;
@@ -28,25 +35,18 @@ export type GeneratedExercise = {
   repMax: number;
   targetRpe: number;
   restSec: number;
+  distanceM: number | null;
 };
 
 export type GeneratedDay = {
   weekNumber: number;
   day: string;
-  focus: string;
+  focus: SessionType;
   isDeload: boolean;
   exercises: GeneratedExercise[];
 };
 
-export const VOLUME_RANGE: Record<Experience, { min: number; max: number }> = {
-  BEGINNER: { min: 10, max: 14 },
-  INTERMEDIATE: { min: 12, max: 18 },
-  ADVANCED: { min: 14, max: 20 },
-};
-
-const WEEK_RPE = [7, 7.5, 8, 6];
-const MAX_SETS = 5;
-const MIN_SETS = 2;
+export type TemplateDay = { weekday: number; focus: SessionType; exercises: GeneratedExercise[] };
 
 function maxExercises(minutes: number) {
   if (minutes <= 45) return 4;
@@ -55,95 +55,101 @@ function maxExercises(minutes: number) {
   return 7;
 }
 
-function baseSets(compound: boolean, exp: Experience) {
-  if (exp === "BEGINNER") return compound ? 3 : 2;
-  if (exp === "INTERMEDIATE") return compound ? 4 : 3;
-  return 4;
+type Dose = { sets: number; repMin: number; repMax: number; rpe: number; rest: number };
+const d = (sets: number, repMin: number, repMax: number, rpe: number, rest: number): Dose => ({ sets, repMin, repMax, rpe, rest });
+
+/**
+ * Loading by role and season phase.
+ * Off-season builds strength (moderate reps, more volume), pre-season converts it to power
+ * (heavy, low reps, more plyometrics), in-season maintains it with low volume.
+ */
+const DOSE: Record<Role, Record<SeasonPhase, Dose>> = {
+  power: { OFF_SEASON: d(3, 4, 5, 7, 150), PRE_SEASON: d(4, 2, 3, 7.5, 180), IN_SEASON: d(3, 2, 3, 7, 150) },
+  strength: { OFF_SEASON: d(4, 6, 8, 7.5, 150), PRE_SEASON: d(4, 3, 5, 8, 180), IN_SEASON: d(3, 3, 5, 7, 150) },
+  accessory: { OFF_SEASON: d(3, 8, 12, 7, 90), PRE_SEASON: d(3, 6, 8, 7.5, 90), IN_SEASON: d(2, 6, 8, 7, 90) },
+  plyo: { OFF_SEASON: d(3, 5, 5, 7, 90), PRE_SEASON: d(4, 4, 5, 7.5, 90), IN_SEASON: d(3, 3, 4, 7, 90) },
+  speed: { OFF_SEASON: d(4, 1, 1, 8, 120), PRE_SEASON: d(6, 1, 1, 9, 150), IN_SEASON: d(4, 1, 1, 8.5, 150) },
+  conditioning: { OFF_SEASON: d(8, 30, 30, 8, 60), PRE_SEASON: d(10, 30, 30, 8.5, 60), IN_SEASON: d(6, 30, 30, 8, 60) },
+  core: { OFF_SEASON: d(3, 8, 12, 7, 60), PRE_SEASON: d(3, 8, 10, 7, 60), IN_SEASON: d(2, 8, 10, 7, 60) },
+  prehab: { OFF_SEASON: d(3, 8, 10, 6.5, 60), PRE_SEASON: d(3, 6, 8, 6.5, 60), IN_SEASON: d(2, 6, 8, 6.5, 60) },
+  mobility: { OFF_SEASON: d(2, 6, 8, 5, 30), PRE_SEASON: d(2, 6, 8, 5, 30), IN_SEASON: d(2, 6, 8, 5, 30) },
+};
+
+/** Work interval in seconds for TIME exercises, by role. */
+const SECONDS: Partial<Record<Role, [number, number]>> = {
+  conditioning: [30, 30], core: [20, 30], prehab: [20, 30], mobility: [30, 45],
+};
+
+const LOADED_ROLES = new Set<Role>(["power", "strength", "plyo"]);
+
+export function prescribe(ex: Pick<LibraryExercise, "id" | "measure">, role: Role, phase: SeasonPhase, experience: Experience) {
+  const base = DOSE[role][phase];
+  let sets = base.sets;
+  if (LOADED_ROLES.has(role)) {
+    if (experience === "BEGINNER") sets = Math.max(2, sets - 1);
+    if (experience === "ADVANCED" && role === "strength" && phase !== "IN_SEASON") sets = Math.min(5, sets + 1);
+  }
+  let { repMin, repMax } = base;
+  let distanceM: number | null = null;
+  if (ex.measure === "TIME") [repMin, repMax] = SECONDS[role] ?? [20, 30];
+  if (ex.measure === "DISTANCE") {
+    repMin = repMax = 1;
+    distanceM = DISTANCE_M[ex.id] ?? 20;
+  }
+  // Nordics: low reps, the eccentric is brutal.
+  if (ex.id === "nordic-curl") { repMin = 3; repMax = 6; }
+  return { sets, repMin, repMax, targetRpe: base.rpe, restSec: base.rest, distanceM };
 }
 
-function reps(compound: boolean, exp: Experience) {
-  if (!compound) return { repMin: 10, repMax: 15 };
-  return exp === "BEGINNER" ? { repMin: 8, repMax: 12 } : { repMin: 6, repMax: 10 };
-}
-
-type TemplateDay = { focus: string; exercises: GeneratedExercise[] };
-
-/** One week's sessions (exercise selection + base volume), reused for all 4 weeks. */
-export function buildWeekTemplate(pref: TrainingPrefInput, library: LibraryExercise[]): TemplateDay[] {
+/** One week of sessions, keyed to the athlete's S&C weekdays; reused for all 4 weeks. */
+export function buildWeekTemplate(pref: TrainingPrefInput, ctx: ProgramContext, library: LibraryExercise[]): TemplateDay[] {
+  const category = sportCategory(ctx.sport);
   const allowed = library.filter(
-    (e) => e.equipment.includes(pref.equipment) && !e.stresses.some((s) => pref.injuries.includes(s)),
+    (e) =>
+      e.equipment.includes(pref.equipment) &&
+      !e.stresses.some((s) => pref.injuries.includes(s)) &&
+      !(pref.experience === "BEGINNER" && ADVANCED_ONLY.has(e.id)),
   );
-  const focuses = weekFocuses(pref.split, pref.weekdays.length);
+  const schedule = scheduleWeek(weekSessions(category, ctx.phase, pref.weekdays.length), pref.weekdays, ctx.matchWeekdays);
   const seen: Record<string, number> = {};
+  const limit = maxExercises(pref.sessionMinutes);
 
-  const days: TemplateDay[] = focuses.map((focus) => {
-    const variant = (seen[focus] = (seen[focus] ?? -1) + 1);
+  return schedule.map(({ weekday, session }) => {
+    const variant = (seen[session] = (seen[session] ?? -1) + 1);
+    let slots: Slot[] = SESSION_SLOTS[session].slice(0, limit);
+    if (category === "COMBAT" && (session === "STRENGTH_UPPER" || session === "TOTAL_STRENGTH_POWER")) {
+      slots = [...slots.slice(0, Math.max(1, limit - COMBAT_EXTRAS.length)), ...COMBAT_EXTRAS];
+    }
     const used = new Set<string>();
     const picks: GeneratedExercise[] = [];
-    const slotCount: Record<string, number> = {};
-
-    for (const slot of FOCUS_SLOTS[focus].slice(0, maxExercises(pref.sessionMinutes))) {
-      const key = `${slot.muscle}:${slot.compound}`;
-      const k = (slotCount[key] = (slotCount[key] ?? -1) + 1);
-      let pool = allowed.filter((e) => e.muscle === slot.muscle && e.isCompound === slot.compound && !used.has(e.id));
-      if (pool.length === 0) pool = allowed.filter((e) => e.muscle === slot.muscle && !used.has(e.id));
-      if (pool.length === 0) continue;
+    slots.forEach((slot, k) => {
+      const fits = (e: LibraryExercise) => slot.patterns.includes(e.muscle as never) && !used.has(e.id);
+      let pool = allowed.filter((e) => fits(e) && (!slot.heavy || e.isCompound));
+      if (pool.length === 0) pool = allowed.filter(fits);
+      if (pool.length === 0) return;
       const ex = pool[(variant + k) % pool.length];
       used.add(ex.id);
-      picks.push({
-        exerciseId: ex.id,
-        muscle: ex.muscle,
-        order: picks.length + 1,
-        sets: baseSets(ex.isCompound, pref.experience),
-        ...reps(ex.isCompound, pref.experience),
-        targetRpe: WEEK_RPE[0],
-        restSec: ex.isCompound ? 150 : 75,
-      });
-    }
-    return { focus, exercises: picks };
+      picks.push({ exerciseId: ex.id, muscle: ex.muscle, order: picks.length + 1, ...prescribe(ex, slot.role, ctx.phase, pref.experience) });
+    });
+    return { weekday, focus: session, exercises: picks };
   });
-
-  balanceVolume(days, pref.experience);
-  return days;
 }
 
-export function setsPerMuscle(days: { exercises: GeneratedExercise[] }[]) {
-  const out: Record<string, number> = {};
-  for (const d of days) for (const e of d.exercises) out[e.muscle] = (out[e.muscle] ?? 0) + e.sets;
-  return out;
-}
+/** RPE added in weeks 1-3; in-season stays flat to keep athletes fresh for matches. */
+const RAMP: Record<SeasonPhase, number[]> = { OFF_SEASON: [0, 0.5, 1], PRE_SEASON: [0, 0.5, 1], IN_SEASON: [0, 0, 0] };
+const DELOAD_RPE = 6;
 
-/** Nudge weekly sets for major muscles into the experience range, one set at a time. */
-function balanceVolume(days: TemplateDay[], exp: Experience) {
-  const range = VOLUME_RANGE[exp];
-  for (const muscle of MAJOR_MUSCLES) {
-    const exs = days.flatMap((d) => d.exercises.filter((e) => e.muscle === muscle));
-    if (exs.length === 0) continue;
-    let total = exs.reduce((a, e) => a + e.sets, 0);
-    let i = 0;
-    while (total < range.min && exs.some((e) => e.sets < MAX_SETS)) {
-      const e = exs[i++ % exs.length];
-      if (e.sets < MAX_SETS) { e.sets++; total++; }
-    }
-    while (total > range.max && exs.some((e) => e.sets > MIN_SETS)) {
-      const e = exs[i++ % exs.length];
-      if (e.sets > MIN_SETS) { e.sets--; total--; }
-    }
-  }
-}
-
-/** 4-week block: weeks 1-3 ramp RPE 7 -> 8, week 4 deloads (~60% sets, RPE 6). */
-export function generateProgram(pref: TrainingPrefInput, library: LibraryExercise[], startDay: string): GeneratedDay[] {
-  const template = buildWeekTemplate(pref, library);
-  const weekdays = new Set(pref.weekdays);
+/** 4-week block: weeks 1-3 build, week 4 deloads (~60% sets, RPE 6). */
+export function generateProgram(pref: TrainingPrefInput, ctx: ProgramContext, library: LibraryExercise[], startDay: string): GeneratedDay[] {
+  const template = buildWeekTemplate(pref, ctx, library);
+  const byWeekday = new Map(template.map((t) => [t.weekday, t]));
   const out: GeneratedDay[] = [];
 
   for (let w = 0; w < 4; w++) {
-    let idx = 0;
-    for (let d = 0; d < 7; d++) {
-      const day = addDays(startDay, w * 7 + d);
-      if (!weekdays.has(weekdayOf(day)) || idx >= template.length) continue;
-      const t = template[idx++];
+    for (let i = 0; i < 7; i++) {
+      const day = addDays(startDay, w * 7 + i);
+      const t = byWeekday.get(weekdayOf(day));
+      if (!t) continue;
       const deload = w === 3;
       out.push({
         weekNumber: w + 1,
@@ -152,8 +158,8 @@ export function generateProgram(pref: TrainingPrefInput, library: LibraryExercis
         isDeload: deload,
         exercises: t.exercises.map((e) => ({
           ...e,
-          sets: deload ? Math.max(MIN_SETS, Math.round(e.sets * 0.6)) : e.sets,
-          targetRpe: WEEK_RPE[w],
+          sets: deload ? Math.max(2, Math.round(e.sets * 0.6)) : e.sets,
+          targetRpe: deload ? Math.min(DELOAD_RPE, e.targetRpe) : Math.min(9.5, e.targetRpe + RAMP[ctx.phase][w]),
         })),
       });
     }

@@ -1,88 +1,102 @@
-import type { Equipment } from "@prisma/client";
+import type { Equipment, ExerciseMeasure } from "@prisma/client";
 
+/**
+ * Athletic strength & conditioning library (no bodybuilding isolation work).
+ * `pattern` is stored in Exercise.muscle. `heavy` = main loaded lift (stored in isCompound).
+ */
 const G: Equipment[] = ["GYM"];
-const GD: Equipment[] = ["GYM", "DUMBBELLS"];
 const ALL: Equipment[] = ["GYM", "DUMBBELLS", "HOME"];
 
+export type Pattern =
+  | "power" | "squat" | "hinge" | "single-leg" | "push" | "pull" | "jump" | "throw" | "sprint" | "agility"
+  | "conditioning" | "core" | "carry" | "prehab" | "neck" | "mobility";
+
 type Row = [
-  id: string, nameEn: string, nameAr: string, muscle: string, equipment: Equipment[],
-  isCompound: boolean, isLowerBody: boolean, stresses: string[], instructionsEn: string, instructionsAr: string,
+  id: string, nameEn: string, nameAr: string, pattern: Pattern, measure: ExerciseMeasure, equipment: Equipment[],
+  heavy: boolean, isLowerBody: boolean, stresses: string[], instructionsEn: string, instructionsAr: string,
 ];
 
 const ROWS: Row[] = [
-  // chest
-  ["bench-press", "Barbell Bench Press", "بنش برس بالبار", "chest", G, true, false, ["SHOULDER"], "Shoulder blades pinned, bar to mid-chest, press up and slightly back.", "لزق لوحي الكتف، نزّل البار لنص الصدر وادفع لفوق."],
-  ["db-bench-press", "Dumbbell Bench Press", "بنش برس دمبل", "chest", GD, true, false, ["SHOULDER"], "Lower dumbbells to chest level with elbows ~45°, press together.", "نزّل الدمبل لمستوى الصدر والكوع ٤٥ درجة وادفع."],
-  ["incline-db-press", "Incline Dumbbell Press", "إنكلاين برس دمبل", "chest", GD, true, false, ["SHOULDER"], "Bench at 30°, control down to upper chest, press up.", "البنش ٣٠ درجة، انزل بالراحة لأعلى الصدر وادفع."],
-  ["chest-dips", "Chest Dips", "متوازي صدر", "chest", G, true, false, ["SHOULDER", "ELBOW"], "Lean forward, lower until a deep chest stretch, push up.", "ميّل لقدام وانزل لحد ما تحس بشد في الصدر واطلع."],
-  ["push-up", "Push-Up", "ضغط", "chest", ALL, true, false, ["WRIST"], "Body in a straight line, chest to floor, full lockout.", "جسمك مفرود خط واحد، صدرك للأرض واطلع للآخر."],
-  ["decline-push-up", "Decline Push-Up", "ضغط مايل", "chest", ALL, true, false, ["WRIST", "SHOULDER"], "Feet on a chair, lower chest to the floor with control.", "رجليك على كرسي ونزّل صدرك للأرض بالراحة."],
-  ["cable-fly", "Cable Fly", "تفتيح كابل", "chest", G, false, false, [], "Slight elbow bend, hug the handles together, squeeze the chest.", "كوعك مثني سنة، قفّل الإيدين قدامك واعصر الصدر."],
-  ["pec-deck", "Pec Deck", "بيك دك", "chest", G, false, false, ["SHOULDER"], "Bring the pads together, pause, return slowly.", "قفّل الجهاز، اثبت ثانية، وارجع بالراحة."],
-  ["db-fly", "Dumbbell Fly", "تفتيح دمبل", "chest", GD, false, false, ["SHOULDER"], "Wide arc down to a stretch, bring dumbbells back over chest.", "افتح دراعك في قوس لحد الشد ورجّعهم فوق صدرك."],
-  ["wide-push-up", "Wide Push-Up", "ضغط واسع", "chest", ALL, false, false, ["WRIST", "SHOULDER"], "Hands wider than shoulders, slow 3-second lowering.", "إيديك أوسع من كتفك ونزول بطيء ٣ ثواني."],
-  // back
-  ["deadlift", "Deadlift", "ديدلفت", "back", G, true, true, ["LOWER_BACK"], "Bar over mid-foot, brace, push the floor away, lock hips.", "البار فوق نص رجلك، شد بطنك، ادفع الأرض وقفّل وسطك."],
-  ["pull-up", "Pull-Up", "عقلة", "back", ALL, true, false, ["SHOULDER", "ELBOW"], "Full hang, pull chest toward the bar, control down.", "ابدأ متعلق للآخر، اسحب صدرك للبار وانزل بالراحة."],
-  ["barbell-row", "Barbell Row", "سحب بالبار", "back", G, true, false, ["LOWER_BACK"], "Hinge to ~45°, row bar to lower ribs.", "ميّل ٤٥ درجة واسحب البار لآخر ضلوعك."],
-  ["lat-pulldown", "Lat Pulldown", "سحب أمامي", "back", G, true, false, [], "Pull the bar to upper chest, elbows down and back.", "اسحب البار لأعلى صدرك والكوع لتحت وورا."],
-  ["seated-cable-row", "Seated Cable Row", "سحب أرضي", "back", G, true, false, [], "Chest up, pull handle to stomach, squeeze shoulder blades.", "صدرك لقدام، اسحب للبطن واقفل لوحي الكتف."],
-  ["db-row", "One-Arm Dumbbell Row", "سحب دمبل بإيد واحدة", "back", GD, true, false, [], "Support on bench, row dumbbell to the hip.", "اسند على البنش واسحب الدمبل ناحية وسطك."],
-  ["inverted-row", "Inverted Row", "سحب مقلوب", "back", ALL, true, false, [], "Under a sturdy table or bar, pull chest up, body straight.", "تحت ترابيزة تقيلة أو بار، اسحب صدرك وجسمك مفرود."],
-  ["straight-arm-pulldown", "Straight-Arm Pulldown", "بول أوفر كابل", "back", G, false, false, [], "Arms straight, sweep the bar to your thighs.", "دراعك مفرود، انزل بالبار لحد فخادك."],
-  ["db-pullover", "Dumbbell Pullover", "بول أوفر دمبل", "back", GD, false, false, ["SHOULDER"], "Arc dumbbell behind head to a stretch, pull back over chest.", "نزّل الدمبل ورا راسك لحد الشد ورجّعه فوق صدرك."],
-  ["superman", "Superman Hold", "سوبرمان", "back", ALL, false, false, [], "Lying face down, lift arms and legs, hold 2 seconds.", "نايم على بطنك، ارفع إيديك ورجليك واثبت ثانيتين."],
-  // shoulders
-  ["ohp", "Overhead Press", "ضغط كتف بالبار", "shoulders", G, true, false, ["SHOULDER", "LOWER_BACK"], "Glutes tight, press the bar overhead, head through.", "اقفل وسطك وادفع البار فوق راسك."],
-  ["db-shoulder-press", "Seated Dumbbell Press", "ضغط كتف دمبل", "shoulders", GD, true, false, ["SHOULDER"], "Press dumbbells overhead without clashing them.", "ادفع الدمبل لفوق من غير ما يخبطوا في بعض."],
-  ["pike-push-up", "Pike Push-Up", "ضغط بايك", "shoulders", ALL, true, false, ["SHOULDER", "WRIST"], "Hips high, lower your head between your hands.", "وسطك لفوق ونزّل راسك بين إيديك."],
-  ["lateral-raise", "Lateral Raise", "رفرفة جانبي", "shoulders", GD, false, false, [], "Raise to shoulder height leading with elbows.", "ارفع لمستوى الكتف والكوع هو اللي بيقود."],
-  ["cable-lateral-raise", "Cable Lateral Raise", "رفرفة جانبي كابل", "shoulders", G, false, false, [], "One arm at a time, constant tension.", "دراع دراع والشد مستمر."],
-  ["rear-delt-fly", "Rear Delt Fly", "رفرفة خلفي", "shoulders", GD, false, false, [], "Bent over, raise dumbbells out to the sides.", "ميّل لقدام وافتح الدمبل للجنب."],
-  ["face-pull", "Face Pull", "فيس بول", "shoulders", G, false, false, [], "Rope to forehead, elbows high, rotate out.", "اسحب الحبل لجبهتك والكوع عالي."],
-  ["prone-y-raise", "Prone Y-Raise", "رفع Y على البطن", "shoulders", ALL, false, false, [], "Face down, raise arms in a Y shape, thumbs up.", "على بطنك، ارفع دراعك على شكل Y والإبهام لفوق."],
-  // quads
-  ["back-squat", "Back Squat", "سكوات بالبار", "quads", G, true, true, ["KNEE", "LOWER_BACK"], "Brace, sit between your hips to parallel or below, drive up.", "شد بطنك وانزل لحد الموازي أو أوطى واطلع بقوة."],
-  ["leg-press", "Leg Press", "ليج برس", "quads", G, true, true, ["KNEE"], "Lower until knees ~90°, don't lock knees at the top.", "انزل لحد ركبتك ٩٠ درجة وماتقفلش الركبة فوق."],
-  ["goblet-squat", "Goblet Squat", "جوبلت سكوات", "quads", GD, true, true, ["KNEE"], "Hold dumbbell at chest, squat deep with upright torso.", "امسك الدمبل عند صدرك وانزل عميق وضهرك مفرود."],
-  ["bulgarian-split-squat", "Bulgarian Split Squat", "بلغاري سكوات", "quads", ALL, true, true, ["KNEE"], "Rear foot on bench, drop the back knee down.", "رجلك الورانية على بنش ونزّل الركبة لتحت."],
-  ["bodyweight-squat", "Tempo Bodyweight Squat", "سكوات بوزن الجسم", "quads", ALL, true, true, ["KNEE"], "3 seconds down, 1 second pause, stand up.", "٣ ثواني نزول، ثانية ثبات، واطلع."],
-  ["leg-extension", "Leg Extension", "رفرفة أمامي", "quads", G, false, true, ["KNEE"], "Extend fully, squeeze quads, lower slowly.", "افرد رجلك للآخر واعصر وانزل بالراحة."],
-  ["walking-lunge", "Walking Lunge", "طعن بالمشي", "quads", ALL, false, true, ["KNEE"], "Long steps, back knee close to floor.", "خطوات واسعة والركبة الورانية قريبة من الأرض."],
-  // hamstrings
-  ["romanian-deadlift", "Romanian Deadlift", "ديدلفت روماني", "hamstrings", G, true, true, ["LOWER_BACK"], "Soft knees, hinge back until hamstring stretch.", "ركبة مثنية سنة وارجع بوسطك لحد الشد في الخلفية."],
-  ["db-rdl", "Dumbbell Romanian Deadlift", "روماني دمبل", "hamstrings", GD, true, true, ["LOWER_BACK"], "Dumbbells slide down thighs, flat back.", "الدمبل ينزل على فخادك وضهرك مفرود."],
-  ["single-leg-rdl", "Single-Leg RDL", "روماني رجل واحدة", "hamstrings", ALL, true, true, [], "Balance on one leg, hinge forward, hips square.", "اتوازن على رجل وميّل لقدام ووسطك مستقيم."],
-  ["lying-leg-curl", "Lying Leg Curl", "رفرفة خلفي نايم", "hamstrings", G, false, true, [], "Curl heels to glutes, slow negative.", "اسحب كعبك لورا ونزول بطيء."],
-  ["seated-leg-curl", "Seated Leg Curl", "رفرفة خلفي قاعد", "hamstrings", G, false, true, [], "Lean forward slightly, curl fully.", "ميّل لقدام سنة واسحب للآخر."],
-  ["nordic-curl", "Nordic Curl", "نوردك كيرل", "hamstrings", ALL, false, true, ["KNEE"], "Anchor feet, lower torso as slowly as possible.", "ثبّت رجليك ونزّل جسمك أبطأ ما تقدر."],
-  ["slider-leg-curl", "Towel Slider Leg Curl", "كيرل بالفوطة", "hamstrings", ALL, false, true, [], "Hips up, slide heels in and out on a towel.", "ارفع وسطك واسحب كعبك على الفوطة."],
-  // glutes
-  ["hip-thrust", "Barbell Hip Thrust", "هيب ثرست بالبار", "glutes", G, true, true, [], "Upper back on bench, drive hips up, pause.", "ضهرك على البنش، ارفع وسطك واثبت."],
-  ["db-hip-thrust", "Dumbbell Hip Thrust", "هيب ثرست دمبل", "glutes", GD, true, true, [], "Dumbbell on hips, full hip lockout.", "الدمبل على وسطك وقفّل للآخر."],
-  ["glute-bridge", "Single-Leg Glute Bridge", "جلوت بريدج رجل واحدة", "glutes", ALL, true, true, [], "One foot planted, lift hips, squeeze.", "رجل واحدة على الأرض، ارفع وسطك واعصر."],
-  ["cable-kickback", "Cable Kickback", "كيك باك كابل", "glutes", G, false, true, [], "Kick back and up, squeeze the glute.", "ارفس لورا ولفوق واعصر."],
-  // biceps
-  ["barbell-curl", "Barbell Curl", "بايسبس بار", "biceps", G, false, false, ["ELBOW", "WRIST"], "Elbows pinned, curl without swinging.", "الكوع ثابت جنبك ومن غير مرجحة."],
-  ["db-curl", "Dumbbell Curl", "بايسبس دمبل", "biceps", GD, false, false, [], "Supinate as you curl, slow down.", "لف كفك وانت طالع وانزل بالراحة."],
-  ["hammer-curl", "Hammer Curl", "هامر", "biceps", GD, false, false, [], "Neutral grip, curl to shoulder.", "مسكة محايدة واطلع لحد الكتف."],
-  ["cable-curl", "Cable Curl", "بايسبس كابل", "biceps", G, false, false, [], "Constant tension, squeeze at the top.", "شد مستمر واعصر فوق."],
-  ["incline-db-curl", "Incline Dumbbell Curl", "بايسبس دمبل على بنش مايل", "biceps", GD, false, false, ["SHOULDER"], "Arms hang behind torso, curl from a stretch.", "دراعك سايب ورا جسمك وابدأ من الشد."],
-  ["towel-curl", "Towel Isometric Curl", "بايسبس بالفوطة", "biceps", ALL, false, false, [], "Step on a towel and curl hard against it.", "اقف على فوطة واسحبها بكل قوتك."],
-  // triceps
-  ["triceps-pushdown", "Cable Pushdown", "تراي بوش داون", "triceps", G, false, false, ["ELBOW"], "Elbows pinned, push down to full lockout.", "الكوع ثابت وادفع لتحت للآخر."],
-  ["overhead-triceps-ext", "Overhead Dumbbell Extension", "تراي خلف الراس دمبل", "triceps", GD, false, false, ["ELBOW", "SHOULDER"], "Lower behind head to a stretch, extend.", "نزّل ورا راسك لحد الشد وافرد."],
-  ["skull-crusher", "Skull Crusher", "سكل كراشر", "triceps", G, false, false, ["ELBOW"], "Lower bar toward forehead, extend up.", "نزّل البار ناحية جبهتك وافرد."],
-  ["close-grip-bench", "Close-Grip Bench Press", "بنش ضيق", "triceps", G, false, false, ["WRIST", "ELBOW"], "Shoulder-width grip, elbows tucked.", "مسكة بعرض الكتف والكوع لازق."],
-  ["diamond-push-up", "Diamond Push-Up", "ضغط دايموند", "triceps", ALL, false, false, ["WRIST", "ELBOW"], "Hands together under chest, elbows back.", "إيديك جنب بعض تحت صدرك والكوع لورا."],
-  ["bench-dip", "Bench Dip", "متوازي على كرسي", "triceps", ALL, false, false, ["SHOULDER"], "Hands on a chair behind you, dip to 90°.", "إيديك على كرسي وراك وانزل ٩٠ درجة."],
-  // calves
-  ["standing-calf-raise", "Standing Calf Raise", "سمانة واقف", "calves", ALL, false, true, [], "Full stretch at the bottom, pause at the top.", "شد كامل تحت واثبت فوق."],
-  ["seated-calf-raise", "Seated Calf Raise", "سمانة قاعد", "calves", G, false, true, [], "Slow reps, full range.", "عدات بطيئة ومدى كامل."],
+  // power (Olympic derivatives)
+  ["hang-power-clean", "Hang Power Clean", "هانج باور كلين", "power", "LOAD_REPS", G, true, true, ["WRIST", "LOWER_BACK"], "From mid-thigh, jump and shrug, pull under fast and catch high.", "من نص الفخذ، انطّ وارفع كتافك واستلم البار بسرعة فوق."],
+  ["trap-bar-jump", "Trap-Bar Jump", "نط بالتراب بار", "power", "LOAD_REPS", G, true, true, ["KNEE"], "Light trap bar (20–30% of max), dip and jump as high as you can, land soft.", "تراب بار خفيف، انزل سنة وانطّ لأعلى ما تقدر وانزل بهدوء."],
+  ["kb-swing", "Kettlebell Swing", "كيتل بيل سوينج", "power", "LOAD_REPS", G, false, true, ["LOWER_BACK"], "Hinge, snap the hips forward, bell floats to chest height.", "ارجع بوسطك واضرب بالوسط لقدام، الكيتل يطلع لمستوى صدرك."],
+  // squat
+  ["back-squat", "Back Squat", "سكوات بالبار", "squat", "LOAD_REPS", G, true, true, ["KNEE", "LOWER_BACK"], "Brace, sit between your hips to parallel, drive up fast.", "شد بطنك وانزل للموازي واطلع بسرعة."],
+  ["front-squat", "Front Squat", "فرونت سكوات", "squat", "LOAD_REPS", G, true, true, ["KNEE", "WRIST"], "Elbows high, chest tall, squat deep and stand up fast.", "الكوع عالي وصدرك مفرود، انزل عميق واطلع بسرعة."],
+  ["goblet-squat", "Goblet Squat", "جوبلت سكوات", "squat", "LOAD_REPS", ALL, false, true, ["KNEE"], "Hold a dumbbell at your chest, squat deep, torso upright.", "امسك الدمبل عند صدرك وانزل عميق وضهرك مفرود."],
+  // hinge
+  ["trap-bar-deadlift", "Trap-Bar Deadlift", "ديدلفت بالتراب بار", "hinge", "LOAD_REPS", G, true, true, ["LOWER_BACK"], "Stand in the bar, brace, push the floor away and lock the hips.", "اقف جوه البار، شد بطنك، ادفع الأرض وقفّل وسطك."],
+  ["romanian-deadlift", "Romanian Deadlift", "ديدلفت روماني", "hinge", "LOAD_REPS", G, true, true, ["LOWER_BACK"], "Soft knees, push the hips back until the hamstrings stretch.", "ركبة مثنية سنة وارجع بوسطك لحد الشد في الخلفية."],
+  ["hip-thrust", "Barbell Hip Thrust", "هيب ثرست بالبار", "hinge", "LOAD_REPS", G, false, true, [], "Upper back on a bench, drive the hips up and pause.", "ضهرك على البنش، ارفع وسطك واثبت."],
+  // single-leg
+  ["bulgarian-split-squat", "Bulgarian Split Squat", "بلغاري سكوات", "single-leg", "LOAD_REPS", ALL, false, true, ["KNEE"], "Rear foot on a bench, drop the back knee, drive through the front foot.", "رجلك الورانية على بنش، نزّل الركبة واطلع على الرجل القدامية."],
+  ["reverse-lunge", "Reverse Lunge", "لانج لورا", "single-leg", "LOAD_REPS", ALL, false, true, ["KNEE"], "Step back, back knee close to the floor, push back up.", "خطوة لورا والركبة قريبة من الأرض واطلع."],
+  ["step-up", "Step-Up", "ستيب أب", "single-leg", "LOAD_REPS", ALL, false, true, [], "Whole foot on a knee-high box, stand up without pushing off the back leg.", "رجلك كلها على صندوق بارتفاع الركبة واطلع من غير ما تزق بالرجل التانية."],
+  ["single-leg-rdl", "Single-Leg RDL", "روماني رجل واحدة", "single-leg", "LOAD_REPS", ALL, false, true, [], "Balance on one leg, hinge forward with square hips.", "اتوازن على رجل وميّل لقدام ووسطك مستقيم."],
+  ["lateral-lunge", "Lateral Lunge", "لانج جانبي", "single-leg", "LOAD_REPS", ALL, false, true, ["KNEE"], "Big step to the side, sit into the hip, keep the other leg straight.", "خطوة واسعة للجنب، انزل على الوسط والرجل التانية مفرودة."],
+  // push
+  ["bench-press", "Bench Press", "بنش برس", "push", "LOAD_REPS", G, true, false, ["SHOULDER"], "Shoulder blades pinned, bar to mid-chest, press fast.", "لزق لوحي الكتف، البار لنص الصدر وادفع بسرعة."],
+  ["db-bench-press", "Dumbbell Bench Press", "بنش برس دمبل", "push", "LOAD_REPS", ALL, false, false, ["SHOULDER"], "Elbows about 45°, lower to chest level, press up.", "الكوع ٤٥ درجة، انزل لمستوى الصدر وادفع."],
+  ["landmine-press", "Half-Kneeling Landmine Press", "لاندماين برس", "push", "LOAD_REPS", G, false, false, [], "Half kneeling, press the bar up and forward, ribs down.", "على ركبة واحدة، ادفع البار لفوق ولقدام وبطنك مشدودة."],
+  ["push-up", "Push-Up", "ضغط", "push", "REPS", ALL, false, false, ["WRIST"], "Body in a straight line, chest to the floor, full lockout.", "جسمك مفرود، صدرك للأرض واطلع للآخر."],
+  // pull
+  ["pull-up", "Pull-Up", "عقلة", "pull", "REPS", ALL, true, false, ["SHOULDER", "ELBOW"], "Full hang, pull your chest to the bar, control down.", "ابدأ متعلق للآخر، اسحب صدرك للبار وانزل بالراحة."],
+  ["barbell-row", "Barbell Row", "سحب بالبار", "pull", "LOAD_REPS", G, true, false, ["LOWER_BACK"], "Hinge to about 45°, row the bar to your lower ribs.", "ميّل ٤٥ درجة واسحب البار لآخر ضلوعك."],
+  ["db-row", "One-Arm Dumbbell Row", "سحب دمبل بإيد واحدة", "pull", "LOAD_REPS", ALL, false, false, [], "Support on a bench, row the dumbbell to your hip.", "اسند على البنش واسحب الدمبل ناحية وسطك."],
+  ["inverted-row", "Inverted Row", "سحب مقلوب", "pull", "REPS", ALL, false, false, [], "Body straight under a bar, pull your chest up to it.", "جسمك مفرود تحت البار، اسحب صدرك ليه."],
+  // jump (plyometrics)
+  ["box-jump", "Box Jump", "نط على صندوق", "jump", "REPS", ALL, false, true, ["KNEE"], "Jump onto the box, land soft and quiet, step down.", "انطّ على الصندوق، انزل بهدوء وانزل منه ماشي."],
+  ["broad-jump", "Broad Jump", "وثب طويل", "jump", "REPS", ALL, false, true, ["KNEE"], "Swing the arms, jump as far as you can, stick the landing.", "مرجح دراعك وانطّ لأبعد مسافة واثبت في النزول."],
+  ["depth-jump", "Depth Jump", "ديبث جامب", "jump", "REPS", ALL, false, true, ["KNEE"], "Step off a low box, touch the floor and jump up instantly.", "انزل من صندوق واطي ونط على طول أول ما تلمس الأرض."],
+  ["lateral-bound", "Lateral Bound", "وثب جانبي", "jump", "REPS", ALL, false, true, ["KNEE"], "Bound sideways from one leg to the other and hold each landing.", "انطّ للجنب من رجل للتانية واثبت في كل نزلة."],
+  ["pogo-hops", "Pogo Hops", "نطات بوجو", "jump", "REPS", ALL, false, true, [], "Stiff ankles, quick small hops off the balls of the feet.", "كاحل ثابت، نطات صغيرة وسريعة على مشط رجلك."],
+  // throw
+  ["med-ball-rotational-throw", "Med-Ball Rotational Throw", "رمي كرة طبية دوراني", "throw", "REPS", ALL, false, false, ["LOWER_BACK"], "Side-on to a wall, rotate from the hips and throw hard.", "اقف جنب الحيطة، لف من وسطك وارمي بقوة."],
+  ["med-ball-chest-pass", "Med-Ball Chest Pass", "رمي كرة طبية من الصدر", "throw", "REPS", ALL, false, false, ["WRIST"], "Step and push the ball explosively from the chest.", "خطوة لقدام وادفع الكرة من صدرك بانفجار."],
+  ["med-ball-slam", "Med-Ball Slam", "ضرب كرة طبية في الأرض", "throw", "REPS", ALL, false, false, ["SHOULDER"], "Reach tall, slam the ball into the floor with the whole body.", "اتمد لفوق واضرب الكرة في الأرض بجسمك كله."],
+  // sprint (DISTANCE: reps at a set distance)
+  ["acceleration-sprint", "Acceleration Sprint", "سبرنت تسارع", "sprint", "DISTANCE", ALL, false, true, [], "From a 2-point start, drive out low and fast. Full rest between reps.", "من وقفة البداية، اطلع واطي وبسرعة. راحة كاملة بين كل مرة."],
+  ["flying-sprint", "Flying Sprint", "سبرنت طائر", "sprint", "DISTANCE", ALL, false, true, [], "Build up over 20 m, then sprint the timed zone at top speed.", "زوّد سرعتك على ٢٠ متر وبعدين اجري المسافة بأقصى سرعة."],
+  ["sled-push", "Sled Push", "دفع الزلاجة", "sprint", "DISTANCE", G, false, true, [], "Low body angle, drive the sled with powerful steps.", "جسمك مايل لقدام وادفع الزلاجة بخطوات قوية."],
+  // agility
+  ["pro-agility", "5-10-5 Pro Agility", "رشاقة ٥-١٠-٥", "agility", "REPS", ALL, false, true, ["KNEE"], "Sprint 5 m, cut, sprint 10 m, cut, sprint 5 m. Stay low on each cut.", "اجري ٥ متر، اقلب، ١٠ متر، اقلب، ٥ متر. خليك واطي في كل لفة."],
+  ["lateral-shuffle", "Lateral Shuffle Reaction", "تحرك جانبي برد فعل", "agility", "REPS", ALL, false, true, [], "Athletic stance, shuffle and change direction on a partner's signal.", "وقفة الاستعداد، اتحرك للجنب وغيّر الاتجاه على إشارة زميلك."],
+  // conditioning
+  ["tempo-run", "Tempo Runs", "جري تيمبو", "conditioning", "DISTANCE", ALL, false, true, [], "Run at about 70% speed, walk back, repeat.", "اجري بحوالي ٧٠٪ من سرعتك وارجع ماشي وكرر."],
+  ["bike-intervals", "Bike Intervals", "فترات عجلة ثابتة", "conditioning", "TIME", G, false, true, [], "Hard effort on the bike, then easy spinning for the same time.", "مجهود عالي على العجلة وبعدين لف خفيف لنفس الوقت."],
+  ["shuttle-runs", "Shuttle Runs", "جري مكوكي", "conditioning", "REPS", ALL, false, true, ["KNEE"], "Run 20 m and back continuously at high intensity.", "اجري ٢٠ متر ورجوع بشدة عالية من غير وقوف."],
+  ["rower-intervals", "Rower Intervals", "فترات جهاز تجديف", "conditioning", "TIME", G, false, false, ["LOWER_BACK"], "Legs, body, arms; hard pace, then easy recovery.", "رجلك، جسمك، إيدك؛ سرعة عالية وبعدين راحة خفيفة."],
+  // core
+  ["pallof-press", "Pallof Press", "بالوف برس", "core", "REPS", G, false, false, [], "Press the band straight out and resist the rotation.", "ادفع الحبل قدامك وماتسيبش جسمك يلف."],
+  ["dead-bug", "Dead Bug", "ديد باج", "core", "REPS", ALL, false, false, [], "Lower back pressed down, extend opposite arm and leg slowly.", "ضهرك لازق في الأرض، افرد دراع ورجل عكس بعض بالراحة."],
+  ["side-plank", "Side Plank", "بلانك جانبي", "core", "TIME", ALL, false, false, ["SHOULDER"], "Elbow under shoulder, hips high, body in one line.", "الكوع تحت الكتف، وسطك لفوق وجسمك خط واحد."],
+  ["farmer-carry", "Farmer Carry", "مشي المزارع", "carry", "DISTANCE", ALL, false, false, [], "Heavy dumbbells, tall posture, short quick steps.", "دمبل تقيل، اقف مفرود وخطوات قصيرة وسريعة."],
+  // prehab / injury prevention
+  ["nordic-curl", "Nordic Hamstring Curl", "نوردك للخلفية", "prehab", "REPS", ALL, false, true, ["KNEE"], "Anchor your feet and lower your body as slowly as you can.", "ثبّت رجليك ونزّل جسمك أبطأ ما تقدر."],
+  ["copenhagen-plank", "Copenhagen Plank", "بلانك كوبنهاجن", "prehab", "TIME", ALL, false, true, [], "Side plank with the top leg on a bench to strengthen the groin.", "بلانك جانبي ورجلك اللي فوق على بنش لتقوية الضامة."],
+  ["single-leg-calf-raise", "Single-Leg Calf Raise", "سمانة رجل واحدة", "prehab", "REPS", ALL, false, true, [], "Full stretch at the bottom, pause at the top, slow down.", "شد كامل تحت، اثبت فوق، وانزل بالراحة."],
+  ["tibialis-raise", "Tibialis Raise", "رفع مشط القدم", "prehab", "REPS", ALL, false, true, [], "Back against a wall, lift your toes as high as you can.", "ضهرك على الحيطة وارفع صوابع رجلك لأعلى ما تقدر."],
+  ["face-pull", "Face Pull", "فيس بول", "prehab", "LOAD_REPS", G, false, false, [], "Rope to the forehead, elbows high, rotate out.", "اسحب الحبل لجبهتك والكوع عالي ولف لبرا."],
+  ["band-external-rotation", "Band External Rotation", "لف خارجي بالأستك", "prehab", "REPS", ALL, false, false, [], "Elbow at your side, rotate the forearm out against the band.", "الكوع جنبك ولف الساعد لبرا ضد الأستك."],
+  ["neck-isometric", "Neck Isometric Hold", "ثبات الرقبة", "neck", "TIME", ALL, false, false, [], "Hand on head, push gently in each direction and hold. No pain.", "إيدك على راسك وزق بهدوء في كل اتجاه واثبت. من غير ألم."],
+  // mobility / recovery
+  ["hip-90-90", "90/90 Hip Switch", "تبديل الوسط ٩٠/٩٠", "mobility", "REPS", ALL, false, true, [], "Sit with both knees at 90°, rotate side to side slowly.", "اقعد وركبتك الاتنين ٩٠ درجة ولف يمين وشمال بالراحة."],
+  ["worlds-greatest-stretch", "World's Greatest Stretch", "أعظم إطالة", "mobility", "REPS", ALL, false, true, [], "Lunge, elbow to instep, rotate and reach to the sky.", "لانج، الكوع ناحية رجلك، ولف وارفع دراعك لفوق."],
+  ["ankle-rocks", "Ankle Rocks", "مرونة الكاحل", "mobility", "REPS", ALL, false, true, [], "Half kneeling, drive the knee over the toes, heel down.", "على ركبة واحدة، زق الركبة فوق الصوابع والكعب على الأرض."],
+  ["thoracic-rotation", "Thoracic Rotation", "لف أعلى الضهر", "mobility", "REPS", ALL, false, false, [], "On all fours, hand behind head, rotate the elbow up to the ceiling.", "على إيديك وركبك، إيد ورا راسك ولف الكوع للسقف."],
 ];
 
+/** Metres per rep for DISTANCE exercises. */
+export const DISTANCE_M: Record<string, number> = {
+  "acceleration-sprint": 20, "flying-sprint": 20, "sled-push": 20, "tempo-run": 100, "farmer-carry": 30,
+};
+
+/** Technical / high-impact work held back for beginners. */
+export const ADVANCED_ONLY = new Set(["hang-power-clean", "depth-jump"]);
+
 export const EXERCISES = ROWS.map(
-  ([id, nameEn, nameAr, muscle, equipment, isCompound, isLowerBody, stresses, instructionsEn, instructionsAr]) => ({
-    id, nameEn, nameAr, muscle, equipment, isCompound, isLowerBody, stresses, instructionsEn, instructionsAr,
+  ([id, nameEn, nameAr, pattern, measure, equipment, heavy, isLowerBody, stresses, instructionsEn, instructionsAr]) => ({
+    id, nameEn, nameAr, muscle: pattern, measure, equipment, isCompound: heavy, isLowerBody, stresses, instructionsEn, instructionsAr,
   }),
 );

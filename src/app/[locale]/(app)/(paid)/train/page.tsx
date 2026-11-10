@@ -8,6 +8,7 @@ import { planWeekOf, today } from "@/lib/dates";
 import { Link } from "@/i18n/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Segmented } from "@/components/ui/Segmented";
+import { prescription } from "@/lib/training/format";
 
 export default async function TrainPage({ params, searchParams }: {
   params: Promise<{ locale: string }>; searchParams: Promise<{ week?: string }>;
@@ -38,7 +39,7 @@ export default async function TrainPage({ params, searchParams }: {
     <div className="space-y-6">
       <PageHeader
         title={t("title")}
-        subtitle={program ? t(`splits.${program.split}`) : undefined}
+        subtitle={program ? t(`phases.${program.phase}`) : undefined}
         action={<Link href="/train/history" className="icon-btn bg-surface" aria-label={t("history")}><History className="size-5" aria-hidden /></Link>}
       />
 
@@ -58,7 +59,7 @@ export default async function TrainPage({ params, searchParams }: {
                 <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="caption">{dayLabel(d.day)}{isToday ? ` · ${t("today")}` : ""}</p>
-                    <p className="title mt-0.5">{t(`focus.${d.focus}`)}</p>
+                    <p className="title mt-0.5">{t.has(`focus.${d.focus}`) ? t(`focus.${d.focus}`) : d.focus}</p>
                   </div>
                   {done
                     ? <span className="pill bg-ok/15 text-ok"><Check className="size-3.5" aria-hidden />{t("done")}</span>
@@ -68,7 +69,7 @@ export default async function TrainPage({ params, searchParams }: {
                   {d.exercises.map((e) => (
                     <li key={e.id} className="flex justify-between gap-3 text-[0.9375rem]">
                       <span className="truncate text-muted">{isAr ? e.exercise.nameAr : e.exercise.nameEn}</span>
-                      <span className="shrink-0 tnum" dir="ltr">{e.sets} × {e.repMin}–{e.repMax}</span>
+                      <span className="shrink-0 tnum" dir="ltr">{prescription({ ...e, measure: e.exercise.measure })}</span>
                     </li>
                   ))}
                 </ul>

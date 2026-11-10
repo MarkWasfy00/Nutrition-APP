@@ -51,12 +51,23 @@ enum PlanStatus {
   COMPLETED
 }
 
-enum Split {
-  PPL
-  UPPER_LOWER
-  FULL_BODY
-  BRO_SPLIT
-  ARNOLD
+enum Role {
+  COACH
+  ATHLETE
+}
+
+enum SeasonPhase {
+  OFF_SEASON
+  PRE_SEASON
+  IN_SEASON
+}
+
+/// How a set is prescribed and logged.
+enum ExerciseMeasure {
+  LOAD_REPS // kg x reps
+  REPS // bodyweight / jumps / throws: reps only
+  TIME // seconds held or worked
+  DISTANCE // sprints / runs: reps at a prescribed distance
 }
 
 enum Experience {
@@ -79,18 +90,20 @@ enum MealSlot {
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  email               String    @unique
+  id                  String   @id @default(cuid())
+  email               String   @unique
   passwordHash        String
   name                String
-  locale              String    @default("ar-EG")
+  locale              String   @default("ar-EG")
   phone               String?
-  addBackExerciseKcal Boolean   @default(false)
-  createdAt           DateTime  @default(now())
+  addBackExerciseKcal Boolean  @default(false)
+  role                Role     @default(ATHLETE)
+  teamId              String?
+  team                Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  createdAt           DateTime @default(now())
 
   profile      AthleteProfile?
   trainingPref TrainingPreference?
-  subscription Subscription?
   scans        InBodyScan[]
   payments     Payment[]
   plans        NutritionPlan[]
@@ -98,12 +111,37 @@ model User {
   foodLogs     FoodLog[]
   checkIns     CheckIn[]
   customFoods  FoodItem[]
+
+  @@index([teamId, role])
+}
+
+/// A club squad. Coaches pay per athlete seat and invite athletes with the invite code.
+model Team {
+  id               String      @id @default(cuid())
+  name             String
+  /// Sport id from src/lib/sports.ts
+  sport            String
+  inviteCode       String      @unique
+  /// Paid athlete seats (capacity). Ignored when PAYMENTS_DISABLED=true.
+  seats            Int         @default(0)
+  /// Seat count to charge from the next renewal (a decrease waits until then).
+  nextSeats        Int?
+  phase            SeasonPhase @default(OFF_SEASON)
+  /// 0 = Sunday ... 6 = Saturday
+  practiceWeekdays Int[]       @default([])
+  matchWeekdays    Int[]       @default([])
+  createdAt        DateTime    @default(now())
+
+  members      User[]
+  subscription Subscription?
+  payments     Payment[]
 }
 
 model AthleteProfile {
   id                  String    @id @default(cuid())
   userId              String    @unique
   user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Sport id from src/lib/sports.ts
   sport               String
   trainingDaysPerWeek Int
   intensity           Intensity
@@ -119,6 +157,9 @@ model AthleteProfile {
   useSupplements      Boolean   @default(false)
   /// Supplement ids the athlete owns (see src/lib/nutrition/supplements.ts)
   supplements         String[]  @default([])
+  /// Athletes aged 16-17: set when a coach confirms guardian consent.
+  consentConfirmedAt  DateTime?
+  consentById         String?
 }
 
 model InBodyScan {
@@ -144,8 +185,8 @@ model InBodyScan {
 
 model Subscription {
   id                 String    @id @default(cuid())
-  userId             String    @unique
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId             String    @unique
+  team               Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   status             SubStatus @default(PENDING)
   planCode           String    @default("monthly")
   amountCents        Int
@@ -162,8 +203,14 @@ model Subscription {
 
 model Payment {
   id                  String        @id @default(cuid())
+  /// The coach who paid
   userId              String
   user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId              String?
+  team                Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  /// Subscription/renewal: the team's seat count once paid. Top-up: seats added.
+  seats               Int           @default(1)
+  isTopUp             Boolean       @default(false)
   amountCents         Int
   currency            String        @default("EGP")
   status              PaymentStatus @default(PENDING)
@@ -217,21 +264,24 @@ model TrainingPreference {
   id             String     @id @default(cuid())
   userId         String     @unique
   user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  split          Split
-  /// 0 = Sunday ... 6 = Saturday
+  /// Strength & conditioning (gym) days, 0 = Sunday ... 6 = Saturday.
+  /// Team practice and match days come from Team.
   weekdays       Int[]
   sessionMinutes Int        @default(60)
+  /// Training age in the weight room
   experience     Experience
-  equipment      Equipment
+  equipment      Equipment  @default(GYM)
   /// SHOULDER | KNEE | LOWER_BACK | ELBOW | WRIST
   injuries       String[]
 }
 
 model Exercise {
-  id             String      @id
+  id             String          @id
   nameEn         String
   nameAr         String
+  /// Movement pattern: squat | hinge | single-leg | push | pull | jump | throw | sprint | agility | conditioning | core | prehab | mobility | carry
   muscle         String
+  measure        ExerciseMeasure @default(LOAD_REPS)
   equipment      Equipment[]
   isCompound     Boolean
   isLowerBody    Boolean
@@ -248,7 +298,7 @@ model TrainingProgram {
   id     String        @id @default(cuid())
   planId String        @unique
   plan   NutritionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  split  Split
+  phase  SeasonPhase   @default(OFF_SEASON)
   days   ProgramDay[]
 }
 
@@ -275,8 +325,11 @@ model ProgramExercise {
   exercise   Exercise   @relation(fields: [exerciseId], references: [id])
   order      Int
   sets       Int
+  /// Reps (LOAD_REPS/REPS/DISTANCE) or seconds (TIME)
   repMin     Int
   repMax     Int
+  /// DISTANCE exercises: metres per rep
+  distanceM  Int?
   targetRpe  Float
   restSec    Int
 }
@@ -300,17 +353,20 @@ model WorkoutLog {
 }
 
 model SetLog {
-  id         String     @id @default(cuid())
-  workoutId  String
-  workout    WorkoutLog @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exerciseId String
-  exercise   Exercise   @relation(fields: [exerciseId], references: [id])
-  setNumber  Int
-  reps       Int
-  weightKg   Float
-  rpe        Float?
-  isPR       Boolean    @default(false)
-  createdAt  DateTime   @default(now())
+  id          String     @id @default(cuid())
+  workoutId   String
+  workout     WorkoutLog @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    Exercise   @relation(fields: [exerciseId], references: [id])
+  setNumber   Int
+  reps        Int
+  /// 0 for exercises that aren't loaded
+  weightKg    Float      @default(0)
+  /// TIME exercises: seconds done
+  durationSec Int?
+  rpe         Float?
+  isPR        Boolean    @default(false)
+  createdAt   DateTime   @default(now())
 
   @@index([exerciseId])
 }

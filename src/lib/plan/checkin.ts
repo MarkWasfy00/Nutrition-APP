@@ -7,7 +7,7 @@ import { groceryList, scaleDay } from "../nutrition/meals";
 import type { Macros } from "../nutrition/types";
 import { trainingAdherence } from "../training/progress";
 import { generateWeekMealsAI, writeFollowUpAI } from "../ai/gemini";
-import { asDays, asMacros, dueCheckInWeek, getActivePlan, weekDays } from "./service";
+import { asDays, asMacros, dueCheckInWeek, getActivePlan, trainingWeekdays, weekDays } from "./service";
 
 export type CheckInInput = {
   bodyWeightKg: number;
@@ -26,7 +26,7 @@ export async function submitCheckIn(userId: string, input: CheckInInput) {
   const plan = await getActivePlan(userId);
   if (!plan) throw new CheckInError("NO_PLAN");
   const [user, profile, pref, previous] = await Promise.all([
-    db.user.findUniqueOrThrow({ where: { id: userId } }),
+    db.user.findUniqueOrThrow({ where: { id: userId }, include: { team: true } }),
     db.athleteProfile.findUniqueOrThrow({ where: { userId } }),
     db.trainingPreference.findUniqueOrThrow({ where: { userId } }),
     db.checkIn.findMany({ where: { planId: plan.id }, orderBy: { weekNumber: "asc" } }),
@@ -60,7 +60,7 @@ export async function submitCheckIn(userId: string, input: CheckInInput) {
   for (const w of plan.weeks.filter((w) => w.weekNumber > weekNumber && (w.weekNumber === weekNumber + 1 || adjustment.kcalDelta !== 0))) {
     const days = w.weekNumber === weekNumber + 1
       ? await generateWeekMealsAI({
-          days: weekDays(plan.startDay, w.weekNumber, pref.weekdays),
+          days: weekDays(plan.startDay, w.weekNumber, trainingWeekdays(user.team, pref.weekdays)),
           targets: newTargets,
           mealsPerDay: profile.mealsPerDay,
           allergies: profile.allergies,
@@ -69,6 +69,7 @@ export async function submitCheckIn(userId: string, input: CheckInInput) {
           locale: user.locale,
           weekNumber: w.weekNumber,
           sport: profile.sport,
+          phase: user.team?.phase,
           goal: plan.goal,
         })
       : asDays(w.days).map((d) => scaleDay(d, newTargets[d.type]));
@@ -77,7 +78,7 @@ export async function submitCheckIn(userId: string, input: CheckInInput) {
 
   const followUp =
     (await writeFollowUpAI({
-      locale: user.locale, name: user.name, goal: plan.goal, weekNumber, adjustment, adherence: input.adherence,
+      locale: user.locale, name: user.name, sport: profile.sport, goal: plan.goal, weekNumber, adjustment, adherence: input.adherence,
       trainingAdherence: tAdherence, energy: input.energy, hunger: input.hunger, sleep: input.sleep,
       performance: input.performance, notes: input.notes, newTraining: newTargets.TRAINING, newRest: newTargets.REST,
     })) ?? (await templateFollowUp(user.locale, adjustment.reason, adjustment.kcalDelta, tAdherence, weekNumber));

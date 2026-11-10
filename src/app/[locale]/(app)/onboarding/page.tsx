@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth/guards";
+import { homePath, requireUser } from "@/lib/auth/guards";
 import { OnboardingForm } from "@/components/forms/OnboardingForm";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LogOut } from "lucide-react";
@@ -10,9 +11,11 @@ export default async function OnboardingPage({ params }: { params: Promise<{ loc
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireUser(locale);
-  const [profile, pref] = await Promise.all([
+  if (user.role === "COACH" || !user.teamId) redirect(homePath(user));
+  const [profile, pref, team] = await Promise.all([
     db.athleteProfile.findUnique({ where: { userId: user.id } }),
     db.trainingPreference.findUnique({ where: { userId: user.id } }),
+    db.team.findUnique({ where: { id: user.teamId } }),
   ]);
   const [t, ts] = await Promise.all([getTranslations("onboarding"), getTranslations("settings")]);
   return (
@@ -29,12 +32,13 @@ export default async function OnboardingPage({ params }: { params: Promise<{ loc
         }
       />
       <OnboardingForm
+        team={{ practiceWeekdays: team?.practiceWeekdays ?? [], matchWeekdays: team?.matchWeekdays ?? [] }}
         d={{
-          sport: profile?.sport, sex: profile?.sex, birthDate: profile?.birthDate.toISOString().slice(0, 10),
+          sport: profile?.sport ?? team?.sport, sex: profile?.sex, birthDate: profile?.birthDate.toISOString().slice(0, 10),
           heightCm: profile?.heightCm, goal: profile?.goal, targetWeightKg: profile?.targetWeightKg,
           intensity: profile?.intensity, mealsPerDay: profile?.mealsPerDay, allergies: profile?.allergies,
-          dietaryPrefs: profile?.dietaryPrefs, useSupplements: profile?.useSupplements, supplements: profile?.supplements, split: pref?.split, experience: pref?.experience,
-          equipment: pref?.equipment, sessionMinutes: pref?.sessionMinutes, weekdays: pref?.weekdays, injuries: pref?.injuries,
+          dietaryPrefs: profile?.dietaryPrefs, useSupplements: profile?.useSupplements, supplements: profile?.supplements,
+          experience: pref?.experience, sessionMinutes: pref?.sessionMinutes, weekdays: pref?.weekdays, injuries: pref?.injuries,
         }}
       />
     </div>

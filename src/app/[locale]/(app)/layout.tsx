@@ -23,12 +23,12 @@ export default async function AppLayout({ children, params }: { children: ReactN
       </a>
       <header className="sticky top-0 z-30 bg-bg/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4">
-          <Brand href="/today" />
+          <Brand href={user.role === "COACH" ? "/coach" : "/today"} />
           <LocaleSwitcher />
         </div>
       </header>
       <main id="main" className="mx-auto max-w-lg px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-2">{children}</main>
-      <BottomNav />
+      <BottomNav role={user.role} />
     </>
   );
 }

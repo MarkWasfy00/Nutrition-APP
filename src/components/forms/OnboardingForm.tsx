@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { saveOnboarding } from "@/actions/profile";
+import { SPORTS } from "@/lib/sports";
 import { Spinner } from "../SubmitButton";
 import { SupplementPicker } from "./SupplementPicker";
 
@@ -10,8 +11,11 @@ export type OnboardingDefaults = {
   sport?: string; sex?: string; birthDate?: string; heightCm?: number; goal?: string; targetWeightKg?: number | null;
   intensity?: string; mealsPerDay?: number; allergies?: string[]; dietaryPrefs?: string[];
   useSupplements?: boolean; supplements?: string[];
-  split?: string; experience?: string; equipment?: string; sessionMinutes?: number; weekdays?: number[]; injuries?: string[];
+  experience?: string; sessionMinutes?: number; weekdays?: number[]; injuries?: string[];
 };
+
+/** Performance first: most club athletes fuel for training and competition. */
+const GOALS = ["PERFORMANCE", "MAINTAIN", "BULK", "CUT", "RECOMP"] as const;
 
 const STEPS = ["about", "goal", "food", "training"] as const;
 
@@ -24,8 +28,9 @@ function Choice({ name, value, label, type = "radio", checked }: { name: string;
   );
 }
 
-export function OnboardingForm({ d }: { d: OnboardingDefaults }) {
+export function OnboardingForm({ d, team }: { d: OnboardingDefaults; team: { practiceWeekdays: number[]; matchWeekdays: number[] } }) {
   const t = useTranslations("onboarding");
+  const ts = useTranslations("sports");
   const [state, action, pending] = useActionState(saveOnboarding, undefined);
   const [step, setStep] = useState(0);
   const [weekdaysError, setWeekdaysError] = useState(false);
@@ -45,8 +50,8 @@ export function OnboardingForm({ d }: { d: OnboardingDefaults }) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const days = form.getAll("weekdays").length;
-    setWeekdaysError(days < 2 || days > 6);
-    if (days < 2 || days > 6) return;
+    setWeekdaysError(days < 1 || days > 4);
+    if (days < 1 || days > 4) return;
     startTransition(() => action(form));
   };
 
@@ -65,7 +70,10 @@ export function OnboardingForm({ d }: { d: OnboardingDefaults }) {
       <section data-step={0} className={show(0)}>
         <div>
           <label className="label" htmlFor="sport">{t("sport")}</label>
-          <input id="sport" name="sport" required minLength={2} defaultValue={d.sport} placeholder={t("sportPlaceholder")} className="input" />
+          <select id="sport" name="sport" required defaultValue={d.sport && SPORTS.some((s) => s.id === d.sport) ? d.sport : ""} className="input">
+            <option value="" disabled>{t("chooseSport")}</option>
+            {SPORTS.map((s) => <option key={s.id} value={s.id}>{ts(s.id)}</option>)}
+          </select>
         </div>
         <div>
           <span className="label" id="ob-l1">{t("sex")}</span>
@@ -76,20 +84,21 @@ export function OnboardingForm({ d }: { d: OnboardingDefaults }) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor="birthDate">{t("birthDate")}</label>
-            <input id="birthDate" name="birthDate" type="date" required defaultValue={d.birthDate} className="input" />
+            <input id="birthDate" name="birthDate" type="date" required defaultValue={d.birthDate} className="input" aria-describedby="age-hint" />
           </div>
           <div>
             <label className="label" htmlFor="heightCm">{t("height")}</label>
             <input id="heightCm" name="heightCm" type="number" min={120} max={230} step="0.5" required defaultValue={d.heightCm} className="input" />
           </div>
         </div>
+        <p id="age-hint" className="footnote">{t("ageHint")}</p>
       </section>
 
       <section data-step={1} className={show(1)}>
         <div>
           <span className="label" id="ob-l2">{t("goal")}</span>
           <div className="grid gap-2" role="group" aria-labelledby="ob-l2">
-            {["CUT", "BULK", "RECOMP", "PERFORMANCE", "MAINTAIN"].map((g) => (
+            {GOALS.map((g) => (
               <label key={g} className="option-card">
                 <input type="radio" name="goal" value={g} defaultChecked={d.goal === g} required className="peer sr-only" />
                 <span className="flex-1">
@@ -138,18 +147,12 @@ export function OnboardingForm({ d }: { d: OnboardingDefaults }) {
       </section>
 
       <section data-step={3} className={show(3)}>
-        <div>
-          <span className="label" id="ob-l7">{t("split")}</span>
-          <div className="grid gap-2 sm:grid-cols-2" role="group" aria-labelledby="ob-l7">
-            {["PPL", "UPPER_LOWER", "FULL_BODY", "BRO_SPLIT", "ARNOLD"].map((v) => (
-              <label key={v} className="option-card flex-col gap-0.5">
-                <input type="radio" name="split" value={v} defaultChecked={d.split === v} required className="sr-only" />
-                <span className="block font-semibold">{t(`splits.${v}.title`)}</span>
-                <span className="footnote">{t(`splits.${v}.body`)}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+        {(team.practiceWeekdays.length > 0 || team.matchWeekdays.length > 0) && (
+          <dl className="footnote space-y-1 rounded-2xl bg-surface px-4 py-3">
+            {team.practiceWeekdays.length > 0 && <div><dt className="inline font-medium text-fg">{t("teamPractice")}: </dt><dd className="inline">{team.practiceWeekdays.map((v) => t(`days.${v}`)).join(" · ")}</dd></div>}
+            {team.matchWeekdays.length > 0 && <div><dt className="inline font-medium text-fg">{t("matchDays")}: </dt><dd className="inline">{team.matchWeekdays.map((v) => t(`days.${v}`)).join(" · ")}</dd></div>}
+          </dl>
+        )}
         <div>
           <span className="label" id="ob-l8">{t("weekdays")}</span>
           <div className="flex flex-wrap gap-2" role="group" aria-labelledby="ob-l8">
@@ -161,12 +164,6 @@ export function OnboardingForm({ d }: { d: OnboardingDefaults }) {
           <span className="label" id="ob-l9">{t("experience")}</span>
           <div className="flex flex-wrap gap-2" role="group" aria-labelledby="ob-l9">
             {["BEGINNER", "INTERMEDIATE", "ADVANCED"].map((v) => <Choice key={v} name="experience" value={v} label={t(`experiences.${v}`)} checked={d.experience === v} />)}
-          </div>
-        </div>
-        <div>
-          <span className="label" id="ob-l10">{t("equipment")}</span>
-          <div className="flex flex-wrap gap-2" role="group" aria-labelledby="ob-l10">
-            {["GYM", "DUMBBELLS", "HOME"].map((v) => <Choice key={v} name="equipment" value={v} label={t(`equipments.${v}`)} checked={d.equipment === v} />)}
           </div>
         </div>
         <div>

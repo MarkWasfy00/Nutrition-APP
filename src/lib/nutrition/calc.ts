@@ -1,4 +1,5 @@
 import type { Goal, Intensity, Sex } from "@prisma/client";
+import { sportCategory, type SportCategory } from "../sports";
 import { kcalFrom, type Macros } from "./types";
 
 export type CalcInput = {
@@ -32,19 +33,24 @@ export function bmr(i: Pick<CalcInput, "weightKg" | "heightCm" | "ageYears" | "s
 
 const REST_FACTOR = 1.3;
 const SESSION_ADD: Record<Intensity, number> = { LOW: 0.2, MODERATE: 0.35, HIGH: 0.5, VERY_HIGH: 0.65 };
-const ENDURANCE = /run|marath|cycl|swim|tri|row|football|soccer|كورة|جري|سباحة|عجل/i;
+/** Extra training-day expenditure for sports with long, running- or aerobic-heavy sessions. */
+const CATEGORY_BONUS: Record<SportCategory, number> = { ENDURANCE: 0.1, TEAM: 0.1, COMBAT: 0.05, RACKET: 0.05, SPEED_POWER: 0, OTHER: 0 };
 
 export function activityFactors(intensity: Intensity, sport?: string) {
-  const enduranceBonus = sport && ENDURANCE.test(sport) ? 0.1 : 0;
-  return { rest: REST_FACTOR, training: REST_FACTOR + SESSION_ADD[intensity] + enduranceBonus };
+  const bonus = sport ? CATEGORY_BONUS[sportCategory(sport)] : 0;
+  return { rest: REST_FACTOR, training: REST_FACTOR + SESSION_ADD[intensity] + bonus };
 }
 
+/** Under-18 athletes are still growing: never more than a 10% deficit. */
+const MINOR_MAX_DEFICIT = -10;
+
 /** Percent change applied to the weekly-average TDEE. */
-export function goalAdjustPct(goal: Goal, sex: Sex, bodyFatPct?: number | null) {
+export function goalAdjustPct(goal: Goal, sex: Sex, bodyFatPct?: number | null, ageYears?: number) {
   switch (goal) {
     case "CUT": {
       const high = sex === "MALE" ? 20 : 28;
-      return bodyFatPct != null && bodyFatPct >= high ? -20 : -15;
+      const pct = bodyFatPct != null && bodyFatPct >= high ? -20 : -15;
+      return ageYears != null && ageYears < 18 ? Math.max(pct, MINOR_MAX_DEFICIT) : pct;
     }
     case "BULK":
       return 10;
@@ -81,7 +87,7 @@ export function calculateTargets(i: CalcInput): CalcResult {
   const tdeeTraining = base * af.training;
   const tdeeRest = base * af.rest;
   const tdeeAvg = (tdeeTraining * days + tdeeRest * (7 - days)) / 7;
-  const adj = goalAdjustPct(i.goal, i.sex, i.bodyFatPct);
+  const adj = goalAdjustPct(i.goal, i.sex, i.bodyFatPct, i.ageYears);
   const weeklyAvgTarget = tdeeAvg * (1 + adj / 100);
 
   // Distribute the weekly target proportionally to each day type's expenditure.

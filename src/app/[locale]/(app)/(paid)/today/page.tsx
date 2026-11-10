@@ -112,7 +112,7 @@ export default async function TodayPage({ params }: { params: Promise<{ locale: 
           <ListRow
             href={`/train/${workoutDay.id}`}
             icon={<Dumbbell className="size-[1.125rem]" />}
-            title={tt(`focus.${workoutDay.focus}`)}
+            title={tt.has(`focus.${workoutDay.focus}`) ? tt(`focus.${workoutDay.focus}`) : workoutDay.focus}
             subtitle={`${t("exercises", { n: workoutDay.exercises.length })}${workoutDay.isDeload ? ` · ${t("deload")}` : ""}`}
             value={workoutDone ? <span className="pill bg-ok/15 text-ok"><Check className="size-3.5" aria-hidden />{t("done")}</span> : <span className="font-semibold text-accent">{t("start")}</span>}
           />

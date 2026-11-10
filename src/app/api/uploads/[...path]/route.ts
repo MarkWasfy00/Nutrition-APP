@@ -1,7 +1,7 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
-import { currentUser } from "@/lib/auth/guards";
+import { currentUser, managedAthlete } from "@/lib/auth/guards";
 import { ALLOWED_IMAGE_TYPES, UPLOAD_ROOT } from "@/lib/uploads";
 
 const TYPES = Object.fromEntries(Object.entries(ALLOWED_IMAGE_TYPES).map(([mime, ext]) => [ext, mime]));
@@ -9,8 +9,11 @@ const TYPES = Object.fromEntries(Object.entries(ALLOWED_IMAGE_TYPES).map(([mime,
 export async function GET(_req: Request, { params }: { params: Promise<{ path: string[] }> }) {
   const user = await currentUser();
   const parts = (await params).path;
-  // Users can only read their own uploads: /api/uploads/<userId>/<file>
-  if (!user || parts.length !== 2 || parts[0] !== user.id || !/^[\w-]+\.(jpg|png|webp)$/.test(parts[1])) {
+  // Users read their own uploads (/api/uploads/<userId>/<file>); coaches also read their athletes'.
+  if (!user || parts.length !== 2 || !/^[\w-]+\.(jpg|png|webp)$/.test(parts[1])) {
+    return new NextResponse("Not found", { status: 404 });
+  }
+  if (parts[0] !== user.id && !(await managedAthlete(user, parts[0]))) {
     return new NextResponse("Not found", { status: 404 });
   }
   try {

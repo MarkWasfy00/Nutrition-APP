@@ -4,23 +4,39 @@ import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Info, Timer, TrendingUp, Trophy } from "lucide-react";
 import { finishWorkout, logSet, startWorkout } from "@/actions/training";
+import { prescription } from "@/lib/training/format";
 import { Spinner } from "./SubmitButton";
+
+export type Measure = "LOAD_REPS" | "REPS" | "TIME" | "DISTANCE";
 
 export type LoggerExercise = {
   exerciseId: string;
   name: string;
   instructions: string;
+  measure: Measure;
   sets: number;
+  /** reps, or seconds for TIME */
   repMin: number;
   repMax: number;
+  distanceM: number | null;
   targetRpe: number;
   restSec: number;
-  last: { weightKg: number; reps: number }[];
+  last: { weightKg: number; reps: number; durationSec: number | null }[];
   suggestion: { weightKg: number; reps: number; increased: boolean } | null;
-  logged: { setNumber: number; weightKg: number; reps: number; isPR: boolean }[];
+  logged: { setNumber: number; weightKg: number; reps: number; durationSec: number | null; isPR: boolean }[];
 };
 
+/** `reps` holds seconds for TIME exercises. */
 type Row = { weight: string; reps: string; saved: boolean; pr: boolean };
+
+function lastText(ex: LoggerExercise, i: number) {
+  const prev = ex.last[i];
+  if (!prev) return "—";
+  if (ex.measure === "LOAD_REPS") return `${prev.weightKg}×${prev.reps}`;
+  if (ex.measure === "TIME") return `${prev.durationSec ?? prev.reps}s`;
+  if (ex.measure === "DISTANCE") return "✓";
+  return `${prev.reps}`;
+}
 
 export function WorkoutLogger(props: {
   dayId: string;
@@ -42,7 +58,7 @@ export function WorkoutLogger(props: {
       Array.from({ length: e.sets }, (_, i) => {
         const l = e.logged.find((s) => s.setNumber === i + 1);
         const w = l?.weightKg ?? e.suggestion?.weightKg ?? e.last[i]?.weightKg;
-        const r = l?.reps ?? e.suggestion?.reps;
+        const r = e.measure === "TIME" ? (l?.durationSec ?? e.repMax) : (l?.reps ?? e.suggestion?.reps ?? (e.measure === "REPS" ? e.repMax : undefined));
         return { weight: w != null ? String(w) : "", reps: r != null ? String(r) : "", saved: !!l, pr: !!l?.isPR };
       }),
     ])),
@@ -66,11 +82,16 @@ export function WorkoutLogger(props: {
 
   const save = (ex: LoggerExercise, i: number) => {
     const row = rows[ex.exerciseId][i];
-    const weightKg = Number(row.weight);
-    const reps = Number(row.reps);
-    if (!workoutId || row.weight === "" || !Number.isFinite(weightKg) || !Number.isFinite(reps) || reps <= 0) return;
+    if (!workoutId) return;
+    const loaded = ex.measure === "LOAD_REPS";
+    const weightKg = loaded ? Number(row.weight) : 0;
+    const value = ex.measure === "DISTANCE" ? 1 : Number(row.reps);
+    if ((loaded && (row.weight === "" || !Number.isFinite(weightKg))) || !Number.isFinite(value) || value <= 0) return;
+    const input = ex.measure === "TIME"
+      ? { reps: 1, weightKg: 0, durationSec: Math.round(value) }
+      : { reps: Math.round(value), weightKg };
     start(async () => {
-      const { isPR } = await logSet({ workoutId, exerciseId: ex.exerciseId, setNumber: i + 1, reps, weightKg });
+      const { isPR } = await logSet({ workoutId, exerciseId: ex.exerciseId, setNumber: i + 1, ...input });
       update(ex.exerciseId, i, { saved: true, pr: isPR });
       setAnnounce(isPR ? t("prAnnounce") : "");
       setRest({ until: Date.now() + ex.restSec * 1000, total: ex.restSec });
@@ -108,7 +129,7 @@ export function WorkoutLogger(props: {
             <div className="min-w-0">
               <h2 id={`ex-${idx}`} className="headline text-base">{ex.name}</h2>
               <p className="footnote mt-0.5 tnum">
-                <span dir="ltr">{ex.sets} × {ex.repMin}–{ex.repMax}</span> · RPE {ex.targetRpe} · {t("rest", { s: ex.restSec })}
+                <span dir="ltr">{prescription(ex)}</span> · RPE {ex.targetRpe} · {t("rest", { s: ex.restSec })}
               </p>
             </div>
             {ex.suggestion?.increased && (
@@ -127,28 +148,30 @@ export function WorkoutLogger(props: {
               <tr className="caption">
                 <th scope="col" className="w-8 font-medium">{t("set")}</th>
                 <th scope="col" className="font-medium">{t("last")}</th>
-                <th scope="col" className="w-[22%] font-medium">{t("kg")}</th>
-                <th scope="col" className="w-[22%] font-medium">{t("reps")}</th>
+                {ex.measure === "LOAD_REPS" && <th scope="col" className="w-[22%] font-medium">{t("kg")}</th>}
+                {ex.measure !== "DISTANCE" && <th scope="col" className="w-[22%] font-medium">{ex.measure === "TIME" ? t("seconds") : t("reps")}</th>}
                 <th scope="col" className="w-12 font-medium"><span className="sr-only">{t("done")}</span></th>
               </tr>
             </thead>
             <tbody>
-              {rows[ex.exerciseId].map((row, i) => {
-                const prev = ex.last[i];
-                return (
+              {rows[ex.exerciseId].map((row, i) => (
                   <tr key={i} className={row.saved ? "text-ok" : ""}>
                     <td className="text-sm font-semibold tnum">{i + 1}</td>
-                    <td className="footnote tnum" dir="ltr">{prev ? `${prev.weightKg}×${prev.reps}` : "—"}</td>
-                    <td>
-                      <input inputMode="decimal" aria-label={t("kgFor", { set: i + 1, name: ex.name })} value={row.weight} disabled={!workoutId}
-                        onChange={(e) => update(ex.exerciseId, i, { weight: e.target.value, saved: false })}
-                        className={`input min-h-11 px-1 text-center font-semibold tnum ${row.saved ? "bg-ok/10" : ""}`} />
-                    </td>
-                    <td>
-                      <input inputMode="numeric" aria-label={t("repsFor", { set: i + 1, name: ex.name })} value={row.reps} disabled={!workoutId}
-                        onChange={(e) => update(ex.exerciseId, i, { reps: e.target.value, saved: false })}
-                        className={`input min-h-11 px-1 text-center font-semibold tnum ${row.saved ? "bg-ok/10" : ""}`} />
-                    </td>
+                    <td className="footnote tnum" dir="ltr">{lastText(ex, i)}</td>
+                    {ex.measure === "LOAD_REPS" && (
+                      <td>
+                        <input inputMode="decimal" aria-label={t("kgFor", { set: i + 1, name: ex.name })} value={row.weight} disabled={!workoutId}
+                          onChange={(e) => update(ex.exerciseId, i, { weight: e.target.value, saved: false })}
+                          className={`input min-h-11 px-1 text-center font-semibold tnum ${row.saved ? "bg-ok/10" : ""}`} />
+                      </td>
+                    )}
+                    {ex.measure !== "DISTANCE" && (
+                      <td>
+                        <input inputMode="numeric" aria-label={t(ex.measure === "TIME" ? "secondsFor" : "repsFor", { set: i + 1, name: ex.name })} value={row.reps} disabled={!workoutId}
+                          onChange={(e) => update(ex.exerciseId, i, { reps: e.target.value, saved: false })}
+                          className={`input min-h-11 px-1 text-center font-semibold tnum ${row.saved ? "bg-ok/10" : ""}`} />
+                      </td>
+                    )}
                     <td>
                       <button type="button" disabled={!workoutId || pending} onClick={() => save(ex, i)}
                         aria-label={t("logSet", { set: i + 1, name: ex.name })} aria-pressed={row.saved}
@@ -157,8 +180,7 @@ export function WorkoutLogger(props: {
                       </button>
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </section>

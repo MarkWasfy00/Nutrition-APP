@@ -14,7 +14,7 @@ export default auth((req) => {
   const [, locale, ...rest] = pathname.split("/");
   if ((routing.locales as readonly string[]).includes(locale)) {
     const path = "/" + rest.filter(Boolean).join("/");
-    if (!PUBLIC_PATHS.has(path) && !req.auth) {
+    if (!PUBLIC_PATHS.has(path) && !path.startsWith("/join/") && !req.auth) {
       const url = new URL(`/${locale}/login`, req.url);
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);

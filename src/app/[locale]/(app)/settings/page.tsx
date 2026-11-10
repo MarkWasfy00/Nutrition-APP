@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { CreditCard, LogOut, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, CreditCard, LogOut, SlidersHorizontal, Users } from "lucide-react";
 import { requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { logout } from "@/actions/auth";
@@ -14,10 +14,12 @@ export default async function SettingsPage({ params, searchParams }: {
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireUser(locale);
-  const [t, ts, profile] = await Promise.all([
+  const isCoach = user.role === "COACH";
+  const [t, ts, profile, team] = await Promise.all([
     getTranslations("settings"),
     getTranslations("supplements"),
     db.athleteProfile.findUnique({ where: { userId: user.id } }),
+    user.teamId ? db.team.findUnique({ where: { id: user.teamId }, select: { name: true } }) : null,
   ]);
   const { saved } = await searchParams;
   const initials = user.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
@@ -37,13 +39,20 @@ export default async function SettingsPage({ params, searchParams }: {
 
       <section>
         <h2 className="section-label">{t("account")}</h2>
-        <SettingsForm name={user.name} phone={user.phone} addBack={user.addBackExerciseKcal} />
+        <SettingsForm name={user.name} phone={user.phone} addBack={isCoach ? undefined : user.addBackExerciseKcal} />
       </section>
 
-      <ListGroup title={t("planSection")}>
-        <ListRow href="/onboarding" icon={<SlidersHorizontal className="size-[1.125rem]" />} title={t("editProfile")} subtitle={t("editProfileHint")} />
-        <ListRow href="/billing" icon={<CreditCard className="size-[1.125rem]" />} title={t("subscription")} subtitle={t("subscriptionHint")} />
-      </ListGroup>
+      {isCoach ? (
+        <ListGroup title={t("teamSection")}>
+          <ListRow href="/coach/team" icon={<CalendarDays className="size-[1.125rem]" />} title={t("teamSchedule")} subtitle={team?.name} />
+          <ListRow href="/billing" icon={<CreditCard className="size-[1.125rem]" />} title={t("subscription")} subtitle={t("subscriptionHint")} />
+        </ListGroup>
+      ) : (
+        <ListGroup title={t("planSection")}>
+          <ListRow href="/onboarding" icon={<SlidersHorizontal className="size-[1.125rem]" />} title={t("editProfile")} subtitle={t("editProfileHint")} />
+          {team && <ListRow icon={<Users className="size-[1.125rem]" />} title={t("yourTeam")} subtitle={team.name} />}
+        </ListGroup>
+      )}
 
       {profile && (
         <section id="supplements" className="scroll-mt-20">

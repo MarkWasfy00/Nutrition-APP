@@ -72,9 +72,20 @@ export function sanitizeSupplements(ids: string[]): SupplementId[] {
   return [...new Set(ids)].filter((id): id is SupplementId => SUPPLEMENT_BY_ID.has(id as SupplementId));
 }
 
+/** Never planned for athletes under 18, even if they own them. */
+export const ADULT_ONLY: ReadonlySet<SupplementId> = new Set(["CAFFEINE", "MASS_GAINER"]);
+
+const isUnder18 = (birthDate: Date, now = new Date()) => {
+  const eighteenth = new Date(birthDate);
+  eighteenth.setFullYear(eighteenth.getFullYear() + 18);
+  return eighteenth > now;
+};
+
 /** The athlete's allowed supplements (empty = food-only plan). */
-export function allowedSupplements(profile: { useSupplements: boolean; supplements: string[] }) {
-  return profile.useSupplements ? sanitizeSupplements(profile.supplements) : [];
+export function allowedSupplements(profile: { useSupplements: boolean; supplements: string[]; birthDate?: Date }) {
+  if (!profile.useSupplements) return [];
+  const ids = sanitizeSupplements(profile.supplements);
+  return profile.birthDate && isUnder18(profile.birthDate) ? ids.filter((id) => !ADULT_ONLY.has(id)) : ids;
 }
 
 export type ScheduleItem = { id: SupplementId; name: string; dose: string; inMeals: boolean };

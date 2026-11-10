@@ -17,9 +17,9 @@ export async function POST(req: Request) {
   const obj = body.obj;
   if (type === "TOKEN") {
     const payment = await db.payment.findFirst({ where: { paymobOrderId: String(obj.order_id) } });
-    if (payment) {
+    if (payment?.teamId) {
       await db.subscription.updateMany({
-        where: { userId: payment.userId },
+        where: { teamId: payment.teamId },
         data: { cardToken: String(obj.token), cardMaskedPan: obj.masked_pan ? String(obj.masked_pan) : null },
       });
     }

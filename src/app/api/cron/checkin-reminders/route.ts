@@ -5,7 +5,7 @@ import { addDays, today } from "@/lib/dates";
 import { cronUnauthorized } from "@/lib/cron";
 import { sendEmail } from "@/lib/email";
 import { nextCheckInDay } from "@/lib/plan/service";
-import { hasAccess } from "@/lib/subscription";
+import { hasAccess, paymentsDisabled } from "@/lib/subscription";
 
 /** Daily: remind on the check-in day, and again 48h later if still missing. */
 export async function GET(req: Request) {
@@ -15,12 +15,12 @@ export async function GET(req: Request) {
   const day = today();
   const plans = await db.nutritionPlan.findMany({
     where: { status: "ACTIVE" },
-    include: { checkIns: { select: { weekNumber: true } }, user: { include: { subscription: true } } },
+    include: { checkIns: { select: { weekNumber: true } }, user: { include: { team: { include: { subscription: true } } } } },
   });
 
   let sent = 0;
   for (const plan of plans) {
-    if (!hasAccess(plan.user.subscription)) continue;
+    if (!paymentsDisabled() && !hasAccess(plan.user.team?.subscription ?? null)) continue;
     const next = nextCheckInDay(plan.startDay, plan.checkIns.map((c) => c.weekNumber));
     if (!next) continue;
     const followUp = day === addDays(next.day, 2);

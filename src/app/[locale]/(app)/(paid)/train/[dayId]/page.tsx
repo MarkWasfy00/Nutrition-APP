@@ -31,15 +31,18 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
         orderBy: { startedAt: "desc" },
         include: { sets: { where: { exerciseId: pe.exerciseId }, orderBy: { setNumber: "asc" } } },
       });
-      const last = lastWorkout?.sets.map((s) => ({ weightKg: s.weightKg, reps: s.reps })) ?? [];
+      const last = lastWorkout?.sets.map((s) => ({ weightKg: s.weightKg, reps: s.reps, durationSec: s.durationSec })) ?? [];
+      const loaded = pe.exercise.measure === "LOAD_REPS";
       return {
         exerciseId: pe.exerciseId,
         name: isAr ? pe.exercise.nameAr : pe.exercise.nameEn,
         instructions: isAr ? pe.exercise.instructionsAr : pe.exercise.instructionsEn,
-        sets: pe.sets, repMin: pe.repMin, repMax: pe.repMax, targetRpe: pe.targetRpe, restSec: pe.restSec,
+        measure: pe.exercise.measure,
+        sets: pe.sets, repMin: pe.repMin, repMax: pe.repMax, distanceM: pe.distanceM, targetRpe: pe.targetRpe, restSec: pe.restSec,
         last,
-        suggestion: suggestNext({ lastSets: last, plannedSets: pe.sets, repMin: pe.repMin, repMax: pe.repMax, isLowerBody: pe.exercise.isLowerBody }),
-        logged: workout?.sets.filter((s) => s.exerciseId === pe.exerciseId).map((s) => ({ setNumber: s.setNumber, weightKg: s.weightKg, reps: s.reps, isPR: s.isPR })) ?? [],
+        suggestion: loaded ? suggestNext({ lastSets: last, plannedSets: pe.sets, repMin: pe.repMin, repMax: pe.repMax, isLowerBody: pe.exercise.isLowerBody }) : null,
+        logged: workout?.sets.filter((s) => s.exerciseId === pe.exerciseId)
+          .map((s) => ({ setNumber: s.setNumber, weightKg: s.weightKg, reps: s.reps, durationSec: s.durationSec, isPR: s.isPR })) ?? [],
       };
     }),
   );
@@ -48,7 +51,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
     <div>
       <PageHeader
         back={{ href: `/train?week=${day.weekNumber}`, label: t("title") }}
-        title={t(`focus.${day.focus}`)}
+        title={t.has(`focus.${day.focus}`) ? t(`focus.${day.focus}`) : day.focus}
         subtitle={`${format.dateTime(new Date(`${day.day}T12:00:00Z`), { weekday: "long", day: "numeric", month: "long" })}${day.isDeload ? ` · ${t("deload")}` : ""}`}
       />
       <WorkoutLogger

@@ -29,23 +29,30 @@ const setSchema = z.object({
   setNumber: z.number().int().min(1).max(20),
   reps: z.number().int().min(0).max(100),
   weightKg: z.number().min(0).max(1000),
+  durationSec: z.number().int().min(1).max(3600).nullable().optional(),
   rpe: z.number().min(1).max(10).nullable().optional(),
 });
 
-/** Upserts one set; returns whether it's a personal record (Epley e1RM). */
+/** Upserts one set; returns whether it's a personal record (Epley e1RM, loaded lifts only). */
 export async function logSet(input: z.input<typeof setSchema>) {
   const user = await actionPaidUser();
   const s = setSchema.parse(input);
-  const workout = await db.workoutLog.findFirst({ where: { id: s.workoutId, userId: user.id } });
-  if (!workout) throw new Error("NOT_FOUND");
+  const [workout, exercise] = await Promise.all([
+    db.workoutLog.findFirst({ where: { id: s.workoutId, userId: user.id } }),
+    db.exercise.findUnique({ where: { id: s.exerciseId }, select: { measure: true } }),
+  ]);
+  if (!workout || !exercise) throw new Error("NOT_FOUND");
 
-  const history = await db.setLog.findMany({
-    where: { exerciseId: s.exerciseId, workout: { userId: user.id }, NOT: { workoutId: s.workoutId, setNumber: s.setNumber } },
-    select: { weightKg: true, reps: true },
-  });
-  const pr = isPR(s, history);
+  let pr = false;
+  if (exercise.measure === "LOAD_REPS") {
+    const history = await db.setLog.findMany({
+      where: { exerciseId: s.exerciseId, workout: { userId: user.id }, NOT: { workoutId: s.workoutId, setNumber: s.setNumber } },
+      select: { weightKg: true, reps: true },
+    });
+    pr = isPR(s, history);
+  }
   const existing = await db.setLog.findFirst({ where: { workoutId: s.workoutId, exerciseId: s.exerciseId, setNumber: s.setNumber } });
-  const data = { reps: s.reps, weightKg: s.weightKg, rpe: s.rpe ?? null, isPR: pr };
+  const data = { reps: s.reps, weightKg: s.weightKg, durationSec: s.durationSec ?? null, rpe: s.rpe ?? null, isPR: pr };
   if (existing) await db.setLog.update({ where: { id: existing.id }, data });
   else await db.setLog.create({ data: { ...data, workoutId: s.workoutId, exerciseId: s.exerciseId, setNumber: s.setNumber } });
   return { isPR: pr };
