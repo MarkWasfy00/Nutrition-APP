@@ -1,11 +1,12 @@
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { CalendarCheck, Check, Dumbbell, Pill, ScanLine, X } from "lucide-react";
+import { CalendarCheck, CalendarClock, Check, Dumbbell, Pill, ScanLine, X } from "lucide-react";
 import { db } from "@/lib/db";
 import { requirePaidUser } from "@/lib/auth/guards";
 import { getDailyStatus } from "@/lib/nutrition/daily";
 import { dueCheckInWeek } from "@/lib/plan/service";
 import { today } from "@/lib/dates";
+import { athleteSessionsWhere, endTime } from "@/lib/schedule";
 import { allowedSupplements, supplementSchedule } from "@/lib/nutrition/supplements";
 import { deleteFoodLog } from "@/actions/food";
 import { Link } from "@/i18n/navigation";
@@ -22,8 +23,8 @@ export default async function TodayPage({ params }: { params: Promise<{ locale: 
   const { user, profile } = await requirePaidUser(locale);
   const status = await getDailyStatus(user.id);
   if (!status) redirect(`/${locale}/inbody/new`);
-  const [t, tt, ts, format] = await Promise.all([
-    getTranslations("today"), getTranslations("train"), getTranslations("supplements"), getFormatter(),
+  const [t, tt, ts, tsc, format] = await Promise.all([
+    getTranslations("today"), getTranslations("train"), getTranslations("supplements"), getTranslations("schedule"), getFormatter(),
   ]);
 
   if (status.expired) {
@@ -38,12 +39,13 @@ export default async function TodayPage({ params }: { params: Promise<{ locale: 
   }
 
   const day = today();
-  const [workoutDay, checkIns] = await Promise.all([
+  const [workoutDay, checkIns, sessions] = await Promise.all([
     db.programDay.findFirst({
       where: { day, program: { planId: status.plan.id } },
       include: { exercises: true, workouts: { where: { userId: user.id } } },
     }),
     db.checkIn.findMany({ where: { planId: status.plan.id }, select: { weekNumber: true } }),
+    db.teamSession.findMany({ where: { ...athleteSessionsWhere({ id: user.id, teamId: user.teamId! }), day }, orderBy: { startTime: "asc" } }),
   ]);
   const due = dueCheckInWeek(status.plan.startDay, checkIns.map((c) => c.weekNumber));
   const loggedKeys = new Set(status.logs.map((l) => l.planMealKey).filter(Boolean));
@@ -106,6 +108,17 @@ export default async function TodayPage({ params }: { params: Promise<{ locale: 
           {user.addBackExerciseKcal && status.workoutKcal > 0 && ` · ${t("addedBack", { n: status.workoutKcal })}`}
         </p>
       </section>
+
+      <ListGroup title={tsc("today")}>
+        {sessions.map((s) => (
+          <ListRow key={s.id} href="/schedule" icon={<CalendarClock className="size-[1.125rem]" />}
+            title={s.title || tsc(`kinds.${s.kind}`)}
+            subtitle={[s.title ? tsc(`kinds.${s.kind}`) : null, s.location, s.athleteId ? tsc("personal") : null].filter(Boolean).join(" · ") || undefined}
+            value={<span dir="ltr">{s.startTime}–{endTime(s.startTime, s.durationMin)}</span>} />
+        ))}
+        <ListRow href="/schedule" icon={<CalendarClock className="size-[1.125rem]" />}
+          title={sessions.length ? tsc("openSchedule") : tsc("noneToday")} subtitle={sessions.length ? undefined : tsc("openSchedule")} />
+      </ListGroup>
 
       <ListGroup title={t("todaysWorkout")}>
         {workoutDay ? (

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { EXERCISES } from "../src/lib/training/library";
 import { FOODS } from "../src/lib/nutrition/foods";
+import { addDays, today } from "../src/lib/dates";
 
 const db = new PrismaClient();
 
@@ -16,7 +17,7 @@ async function seedDemoClub() {
   const team = await db.team.upsert({
     where: { inviteCode: "DEMOTEAM" },
     create: {
-      name: "FUELX Demo FC U21", sport: "football", inviteCode: "DEMOTEAM", seats: 25, phase: "IN_SEASON",
+      name: "FUELX Demo FC U21", sport: "football", inviteCode: "DEMOTEAM", seats: 25, phase: "COMPETITION",
       practiceWeekdays: [0, 1, 2, 4], matchWeekdays: [5],
     },
     update: {},
@@ -60,7 +61,33 @@ async function seedDemoClub() {
     create: { teamId: team.id, status: "ACTIVE", amountCents: 25 * 49_900, currentPeriodStart: now, currentPeriodEnd: end },
     update: {},
   });
+  await seedDemoTests(team.id);
   console.log("Seeded demo club (invite code DEMOTEAM)");
+}
+
+/** Two biomotor testing days for the demo squad (once): one 4 weeks ago, one today. */
+async function seedDemoTests(teamId: string) {
+  if (await db.biomotorAssignment.count({ where: { teamId } })) return;
+  const coach = await db.user.findUniqueOrThrow({ where: { email: "coach@demo.fuelx.test" } });
+  const [omar, youssef] = await Promise.all(
+    ["athlete@demo.fuelx.test", "junior@demo.fuelx.test"].map((email) => db.user.findUniqueOrThrow({ where: { email } })),
+  );
+  const tests = ["cmj", "broad-jump", "sprint-10m", "sprint-30m", "t-test", "yoyo-ir1", "sit-and-reach"];
+  const scores = {
+    before: { [omar.id]: [41.5, 238, 1.86, 4.38, 9.9, 1520, 6], [youssef.id]: [44, 245, 1.81, 4.31, 10.2, 1360, 2.5] },
+    now: { [omar.id]: [44, 246, 1.79, 4.29, 9.6, 1720, 8.5], [youssef.id]: [45.5, 244, 1.8, 4.33, 10.1, 1480, 3] },
+  };
+  for (const [key, title, offset] of [["before", "Pre-season testing", -28], ["now", "Mid-season testing", 0]] as const) {
+    await db.biomotorAssignment.create({
+      data: {
+        teamId, createdById: coach.id, title, day: addDays(today(), offset), tests, notes: "15 min warm-up. Two attempts per test, best counts.",
+        results: {
+          create: Object.entries(scores[key]).flatMap(([athleteId, values]) =>
+            tests.map((testId, i) => ({ athleteId, testId, value: values[i], recordedById: coach.id }))),
+        },
+      },
+    });
+  }
 }
 
 async function main() {

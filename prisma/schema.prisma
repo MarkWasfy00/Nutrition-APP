@@ -58,8 +58,10 @@ enum Role {
 
 enum SeasonPhase {
   OFF_SEASON
-  PRE_SEASON
-  IN_SEASON
+  GENERAL_PREP
+  SPECIFIC_PREP
+  PRE_COMPETITION
+  COMPETITION
 }
 
 /// How a set is prescribed and logged.
@@ -102,15 +104,23 @@ model User {
   team                Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
   createdAt           DateTime @default(now())
 
-  profile      AthleteProfile?
-  trainingPref TrainingPreference?
-  scans        InBodyScan[]
-  payments     Payment[]
-  plans        NutritionPlan[]
-  workouts     WorkoutLog[]
-  foodLogs     FoodLog[]
-  checkIns     CheckIn[]
-  customFoods  FoodItem[]
+  profile          AthleteProfile?
+  trainingPref     TrainingPreference?
+  scans            InBodyScan[]
+  payments         Payment[]
+  plans            NutritionPlan[]
+  workouts         WorkoutLog[]
+  foodLogs         FoodLog[]
+  checkIns         CheckIn[]
+  customFoods      FoodItem[]
+  sessionsCreated  TeamSession[]        @relation("SessionCreator")
+  ownSessions      TeamSession[]        @relation("SessionAthlete")
+  attendance       Attendance[]         @relation("AttendanceAthlete")
+  attendanceMarked Attendance[]         @relation("AttendanceMarker")
+  biomotorCreated  BiomotorAssignment[] @relation("BiomotorCreator")
+  biomotorAssigned BiomotorAssignment[] @relation("BiomotorAthlete")
+  biomotorResults  BiomotorResult[]     @relation("BiomotorResultAthlete")
+  biomotorRecorded BiomotorResult[]     @relation("BiomotorResultRecorder")
 
   @@index([teamId, role])
 }
@@ -135,6 +145,103 @@ model Team {
   members      User[]
   subscription Subscription?
   payments     Payment[]
+  sessions     TeamSession[]
+  biomotor     BiomotorAssignment[]
+}
+
+enum SessionKind {
+  PRACTICE
+  MATCH
+  SC
+  RECOVERY
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+/// A dated team session (practice, match, ...) or one athlete's own session. Coaches take attendance.
+model TeamSession {
+  id          String      @id @default(cuid())
+  teamId      String
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User        @relation("SessionCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  /// null = the whole team; set = only this athlete
+  athleteId   String?
+  athlete     User?       @relation("SessionAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
+  kind        SessionKind
+  title       String?
+  /// YYYY-MM-DD and HH:MM, Africa/Cairo
+  day         String
+  startTime   String
+  durationMin Int
+  location    String?
+  notes       String?
+  createdAt   DateTime    @default(now())
+
+  attendance Attendance[]
+
+  @@index([teamId, day])
+  @@index([athleteId, day])
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  sessionId  String
+  session    TeamSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  athleteId  String
+  athlete    User             @relation("AttendanceAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
+  status     AttendanceStatus
+  markedById String?
+  markedBy   User?            @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  markedAt   DateTime         @updatedAt
+
+  @@unique([sessionId, athleteId])
+  @@index([athleteId])
+}
+
+/// A biomotor testing assignment: field tests (src/lib/biomotor.ts) for the whole team or one athlete on a day.
+model BiomotorAssignment {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("BiomotorCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  /// null = the whole team; set = only this athlete
+  athleteId   String?
+  athlete     User?    @relation("BiomotorAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
+  title       String?
+  /// Testing day, YYYY-MM-DD (Africa/Cairo)
+  day         String
+  /// Test ids from src/lib/biomotor.ts, in library order
+  tests       String[]
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  results BiomotorResult[]
+
+  @@index([teamId, day])
+  @@index([athleteId, day])
+}
+
+/// One athlete's score on one test of an assignment. Entered by the coach or by the athlete.
+model BiomotorResult {
+  id           String             @id @default(cuid())
+  assignmentId String
+  assignment   BiomotorAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  athleteId    String
+  athlete      User               @relation("BiomotorResultAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
+  testId       String
+  value        Float
+  recordedById String?
+  recordedBy   User?              @relation("BiomotorResultRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedAt   DateTime           @updatedAt
+
+  @@unique([assignmentId, athleteId, testId])
+  @@index([athleteId, testId])
 }
 
 model AthleteProfile {
@@ -310,6 +417,8 @@ model ProgramDay {
   day        String // YYYY-MM-DD
   focus      String
   isDeload   Boolean         @default(false)
+  /// Set when a coach edits the session; automatic rebuilds keep edited sessions.
+  editedAt   DateTime?
 
   exercises ProgramExercise[]
   workouts  WorkoutLog[]

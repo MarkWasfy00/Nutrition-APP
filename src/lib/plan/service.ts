@@ -204,7 +204,7 @@ export async function rebuildUpcomingMeals(userId: string, { useAI = true }: { u
 
 /**
  * Rebuilds S&C sessions from today on (e.g. new season phase or match days).
- * Sessions already started or logged are kept as they are.
+ * Sessions already started or logged, and sessions a coach edited, are kept as they are.
  */
 export async function rebuildUpcomingProgram(userId: string) {
   const plan = await getActivePlan(userId);
@@ -216,12 +216,20 @@ export async function rebuildUpcomingProgram(userId: string) {
   ]);
   if (!program) return 0;
   const from = today();
-  const keep = new Set(program.days.filter((d) => d.day < from || d.workouts.length > 0).map((d) => d.day));
+  const keep = new Set(program.days.filter((d) => d.day < from || d.workouts.length > 0 || d.editedAt).map((d) => d.day));
   const fresh = generateProgram(pref, programCtx, exercises, plan.startDay).filter((d) => d.day >= from && !keep.has(d.day));
   await db.$transaction(async (tx) => {
-    await tx.programDay.deleteMany({ where: { programId: program.id, day: { gte: from }, workouts: { none: {} } } });
+    await tx.programDay.deleteMany({ where: { programId: program.id, day: { gte: from }, workouts: { none: {} }, editedAt: null } });
     for (const d of fresh) await tx.programDay.create({ data: { programId: program.id, ...programDayData(d) } });
     await tx.trainingProgram.update({ where: { id: program.id }, data: { phase: programCtx.phase } });
   }, { timeout: 30_000 });
   return fresh.length;
+}
+
+/** The generated (uncoached) session for one day of the athlete's active plan, or null if none is scheduled. */
+export async function generatedSession(userId: string, day: string) {
+  const plan = await getActivePlan(userId);
+  if (!plan) return null;
+  const [{ pref, programCtx }, exercises] = await Promise.all([athleteContext(userId), db.exercise.findMany()]);
+  return generateProgram(pref, programCtx, exercises, plan.startDay).find((d) => d.day === day) ?? null;
 }

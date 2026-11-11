@@ -1,12 +1,13 @@
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Check, CheckCircle2, Dumbbell, ScanLine, ShieldCheck, UserMinus } from "lucide-react";
+import { CalendarCheck2, CalendarPlus, Check, CheckCircle2, Dumbbell, Gauge, PencilLine, ScanLine, ShieldCheck, UserMinus } from "lucide-react";
 import { db } from "@/lib/db";
 import { managedAthlete, requireCoach } from "@/lib/auth/guards";
 import { ageFrom } from "@/lib/nutrition/calc";
 import { asMacros, deriveBodyComp, getActivePlan } from "@/lib/plan/service";
 import { planWeekOf, today } from "@/lib/dates";
 import { athleteStatus } from "@/lib/coach";
+import { attendanceRate } from "@/lib/schedule";
 import { prescription } from "@/lib/training/format";
 import { geminiEnabled } from "@/lib/ai/gemini";
 import { confirmConsent, removeAthlete } from "@/actions/coach";
@@ -26,15 +27,19 @@ export default async function CoachAthletePage({ params, searchParams }: {
   const { user: coach } = await requireCoach(locale);
   const athlete = await managedAthlete(coach, id);
   if (!athlete) notFound();
-  const [t, ts, tt, to, format] = await Promise.all([
-    getTranslations("coach"), getTranslations("sports"), getTranslations("train"), getTranslations("onboarding"), getFormatter(),
+  const [t, ts, tt, to, tc, tsc, tb, format] = await Promise.all([
+    getTranslations("coach"), getTranslations("sports"), getTranslations("train"), getTranslations("onboarding"), getTranslations("coachTraining"), getTranslations("schedule"), getTranslations("biomotor"), getFormatter(),
   ]);
 
-  const [profile, plan, scans] = await Promise.all([
+  const [profile, plan, scans, attendance, tests] = await Promise.all([
     db.athleteProfile.findUnique({ where: { userId: athlete.id } }),
     getActivePlan(athlete.id),
     db.inBodyScan.findMany({ where: { userId: athlete.id, confirmed: true }, orderBy: { takenAt: "asc" } }),
+    db.attendance.findMany({ where: { athleteId: athlete.id, session: { teamId: coach.teamId! } }, select: { status: true } }),
+    db.biomotorResult.findMany({ where: { athleteId: athlete.id, assignment: { teamId: coach.teamId! } }, select: { assignment: { select: { day: true } } } }),
   ]);
+  const lastTested = tests.map((r) => r.assignment.day).sort().at(-1);
+  const rate = attendanceRate(attendance);
   const checkIns = plan ? await db.checkIn.findMany({ where: { planId: plan.id }, orderBy: { weekNumber: "asc" } }) : [];
   const status = athleteStatus({ profile, plan: plan && { startDay: plan.startDay, checkInWeeks: checkIns.map((c) => c.weekNumber) } });
   const week = plan ? planWeekOf(plan.startDay, today()) ?? 4 : null;
@@ -100,6 +105,20 @@ export default async function CoachAthletePage({ params, searchParams }: {
           ))}
         </dl>
       )}
+
+      <ListGroup>
+        {plan && (
+          <ListRow href={`/coach/athletes/${athlete.id}/training`} icon={<PencilLine className="size-[1.125rem]" />}
+            title={tc("editTraining")} subtitle={tc("editTrainingHint")} />
+        )}
+        <ListRow icon={<CalendarCheck2 className="size-[1.125rem]" />} title={tsc("attendance")}
+          subtitle={rate != null ? tsc("rateDetail", { present: attendance.filter((a) => a.status === "PRESENT").length, total: attendance.length }) : tsc("noRecords")}
+          value={rate != null ? `${format.number(rate)}%` : undefined} />
+        <ListRow href={`/coach/athletes/${athlete.id}/tests`} icon={<Gauge className="size-[1.125rem]" />} title={tb("title")}
+          subtitle={lastTested ? tb("rowSubtitle", { n: tests.length, date: dayLabel(lastTested) }) : tb("rowEmpty")} />
+        <ListRow href={`/coach/schedule/new?athlete=${athlete.id}`} icon={<CalendarPlus className="size-[1.125rem]" />}
+          title={tsc("addFor", { name: athlete.name })} />
+      </ListGroup>
 
       {sessions.length > 0 && (
         <ListGroup title={t("thisWeek", { n: week ?? 1 })}>

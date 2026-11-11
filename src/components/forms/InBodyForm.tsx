@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AlertTriangle, Camera, Keyboard } from "lucide-react";
 import { saveScan } from "@/actions/inbody";
 import type { InBodyExtraction } from "@/lib/ai/gemini";
+import { SCAN_RANGES } from "@/lib/inbody";
 import { SubmitButton, Spinner } from "../SubmitButton";
 
 const FIELDS = [
@@ -101,22 +102,32 @@ export function InBodyForm({ purpose, aiEnabled, athleteId }: { purpose: "plan" 
           {imageUrl && mode === "IMAGE" && <input type="hidden" name="imageUrl" value={imageUrl} />}
           {mode === "IMAGE" && <p className="headline px-1">{t("reviewHint")}</p>}
           <div className="card grid grid-cols-2 gap-x-3 gap-y-4">
-            {FIELDS.map(([key, unit, required]) => (
+            {FIELDS.map(([key, unit, required]) => {
+              const [min, max] = SCAN_RANGES[key];
+              const bad = state?.fields?.includes(key);
+              return (
               <div key={key} className={key === "weightKg" ? "col-span-2" : ""}>
                 <label className="label" htmlFor={key}>
                   {t(`fields.${key}`)}{required && <span className="text-accent" aria-hidden> *</span>}
                 </label>
                 <div className="relative">
-                  <input id={key} name={key} type="number" step="0.1" inputMode="decimal" required={required}
+                  <input id={key} name={key} type="number" step="any" min={min} max={max} inputMode="decimal" required={required}
+                    aria-invalid={bad || undefined} aria-describedby={bad ? `${key}-error` : undefined}
                     value={values[key] ?? ""} onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
-                    className={`input tnum ${unit ? "pe-12" : ""} ${key === "weightKg" ? "text-xl font-semibold" : ""}`} />
+                    className={`input tnum ${unit ? "pe-12" : ""} ${key === "weightKg" ? "text-xl font-semibold" : ""} ${bad ? "border-accent ring-1 ring-accent" : ""}`} />
                   {unit && <span className="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-sm text-muted">{unit}</span>}
                 </div>
+                {bad && (
+                  <p id={`${key}-error`} className="mt-1 text-xs font-medium text-accent">
+                    {state?.error === "fatMassTooHigh" ? t("errors.fatMassTooHigh") : t("errors.range", { min, max })}
+                  </p>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
           <p className="footnote px-1">{t("optionalHint")}</p>
-          {state?.error && <p role="alert" className="text-sm font-medium text-accent">{t(`errors.${state.error}`)}</p>}
+          {state?.error && !state.fields?.length && <p role="alert" className="text-sm font-medium text-accent">{t(`errors.${state.error}`)}</p>}
           <SubmitButton className="btn-primary btn-lg w-full" pendingText={<><Spinner /> {purpose === "plan" ? t("building") : ""}</>}>
             {purpose === "plan" ? t("confirmBuild") : t("confirm")}
           </SubmitButton>

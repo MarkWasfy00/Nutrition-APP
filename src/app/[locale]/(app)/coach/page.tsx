@@ -1,5 +1,5 @@
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
-import { AlertTriangle, CalendarCheck, CircleUser, RefreshCw, ScanLine, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CircleUser, Gauge, RefreshCw, ScanLine, ShieldCheck, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireCoach } from "@/lib/auth/guards";
 import { hasAccess, paymentsDisabled } from "@/lib/subscription";
@@ -20,8 +20,8 @@ export default async function CoachPage({ params }: { params: Promise<{ locale: 
   const { locale } = await params;
   setRequestLocale(locale);
   const { team } = await requireCoach(locale);
-  const [t, ts, tt, format] = await Promise.all([
-    getTranslations("coach"), getTranslations("sports"), getTranslations("train"), getFormatter(),
+  const [t, ts, tt, tb, format] = await Promise.all([
+    getTranslations("coach"), getTranslations("sports"), getTranslations("train"), getTranslations("biomotor"), getFormatter(),
   ]);
   const [sub, athletes] = await Promise.all([
     db.subscription.findUnique({ where: { teamId: team.id } }),
@@ -84,6 +84,10 @@ export default async function CoachPage({ params }: { params: Promise<{ locale: 
           </SubmitButton>
         </form>
       </section>
+
+      <ListGroup>
+        <ListRow href="/coach/tests" icon={<Gauge className="size-[1.125rem]" />} title={tb("title")} subtitle={tb("coachRow")} />
+      </ListGroup>
 
       {rows.length === 0 ? (
         <div className="card py-10 text-center">

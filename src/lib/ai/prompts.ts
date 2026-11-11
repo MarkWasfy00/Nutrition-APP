@@ -26,7 +26,7 @@ CONCISE
 
 TIMING
 - On training and match days put most carbohydrates in the meals before and after the session.
-- Pre-season and in-season: athletes train or compete almost daily, so prioritise carbohydrate availability and recovery.
+- Specific preparation, pre-competition and competition phases: athletes train or compete almost daily, so prioritise carbohydrate availability and recovery.
 - Breakfast and dinner follow Egyptian habits: lighter than lunch.
 
 SAFETY

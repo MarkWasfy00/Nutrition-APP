@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ChartLine, CircleUser, CreditCard, Dumbbell, House, Users, UtensilsCrossed, CalendarDays } from "lucide-react";
+import { CalendarClock, CalendarDays, ChartLine, CircleUser, CreditCard, Dumbbell, House, Users, UtensilsCrossed } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 
 type Item = { href: string; key: string; Icon: typeof House; also?: string[]; exact?: boolean };
@@ -9,13 +9,14 @@ type Item = { href: string; key: string; Icon: typeof House; also?: string[]; ex
 const ATHLETE: Item[] = [
   { href: "/today", key: "today", Icon: House },
   { href: "/plan", key: "plan", Icon: UtensilsCrossed },
-  { href: "/train", key: "train", Icon: Dumbbell },
+  { href: "/train", key: "train", Icon: Dumbbell, also: ["/schedule", "/tests"] },
   { href: "/progress", key: "progress", Icon: ChartLine },
   { href: "/settings", key: "account", Icon: CircleUser, also: ["/onboarding"] },
 ];
 
 const COACH: Item[] = [
-  { href: "/coach", key: "athletes", Icon: Users, also: ["/coach/athletes"], exact: true },
+  { href: "/coach", key: "athletes", Icon: Users, also: ["/coach/athletes", "/coach/tests"], exact: true },
+  { href: "/coach/schedule", key: "schedule", Icon: CalendarClock },
   { href: "/coach/team", key: "team", Icon: CalendarDays },
   { href: "/billing", key: "billing", Icon: CreditCard },
   { href: "/settings", key: "account", Icon: CircleUser },

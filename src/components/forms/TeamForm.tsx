@@ -3,10 +3,10 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { saveTeam } from "@/actions/coach";
+import { SEASON_PHASES } from "@/lib/training/phases";
 import { SubmitButton } from "../SubmitButton";
 
 const WEEK = [6, 0, 1, 2, 3, 4, 5]; // Saturday first (Egyptian week)
-const PHASES = ["OFF_SEASON", "PRE_SEASON", "IN_SEASON"] as const;
 
 function Day({ name, value, checked, label }: { name: string; value: number; checked: boolean; label: string }) {
   return (
@@ -32,7 +32,7 @@ export function TeamForm({ team }: { team: { name: string; phase: string; practi
       <fieldset>
         <legend className="label">{t("phase")}</legend>
         <div className="grid gap-2">
-          {PHASES.map((p) => (
+          {SEASON_PHASES.map((p) => (
             <label key={p} className="option-card">
               <input type="radio" name="phase" value={p} defaultChecked={team.phase === p} required className="peer sr-only" />
               <span className="flex-1">

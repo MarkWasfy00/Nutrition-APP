@@ -1,6 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { Check, ChevronRight, History } from "lucide-react";
+import { CalendarClock, Check, ChevronRight, Gauge, History } from "lucide-react";
 import { db } from "@/lib/db";
 import { requirePaidUser } from "@/lib/auth/guards";
 import { getActivePlan } from "@/lib/plan/service";
@@ -18,7 +18,7 @@ export default async function TrainPage({ params, searchParams }: {
   const { user } = await requirePaidUser(locale);
   const plan = await getActivePlan(user.id);
   if (!plan) redirect(`/${locale}/inbody/new`);
-  const [t, format] = await Promise.all([getTranslations("train"), getFormatter()]);
+  const [t, tb, format] = await Promise.all([getTranslations("train"), getTranslations("biomotor"), getFormatter()]);
 
   const current = planWeekOf(plan.startDay, today()) ?? 4;
   const weekNumber = Math.min(4, Math.max(1, Number((await searchParams).week) || current));
@@ -40,7 +40,13 @@ export default async function TrainPage({ params, searchParams }: {
       <PageHeader
         title={t("title")}
         subtitle={program ? t(`phases.${program.phase}`) : undefined}
-        action={<Link href="/train/history" className="icon-btn bg-surface" aria-label={t("history")}><History className="size-5" aria-hidden /></Link>}
+        action={
+          <div className="flex gap-2">
+            <Link href="/tests" className="icon-btn bg-surface" aria-label={tb("title")}><Gauge className="size-5" aria-hidden /></Link>
+            <Link href="/schedule" className="icon-btn bg-surface" aria-label={t("schedule")}><CalendarClock className="size-5" aria-hidden /></Link>
+            <Link href="/train/history" className="icon-btn bg-surface" aria-label={t("history")}><History className="size-5" aria-hidden /></Link>
+          </div>
+        }
       />
 
       <Segmented
@@ -58,7 +64,7 @@ export default async function TrainPage({ params, searchParams }: {
               <Link href={`/train/${d.id}`} className={`card block transition-colors hover:bg-surface-2 ${isToday ? "ring-1 ring-accent/60" : ""}`}>
                 <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="caption">{dayLabel(d.day)}{isToday ? ` · ${t("today")}` : ""}</p>
+                    <p className="caption">{dayLabel(d.day)}{isToday ? ` · ${t("today")}` : ""}{d.editedAt ? ` · ${t("byCoach")}` : ""}</p>
                     <p className="title mt-0.5">{t.has(`focus.${d.focus}`) ? t(`focus.${d.focus}`) : d.focus}</p>
                   </div>
                   {done

@@ -138,9 +138,11 @@ type WeekMealOpts = {
 };
 
 const PHASE_TEXT: Record<SeasonPhase, string> = {
-  OFF_SEASON: "off-season (building strength and body composition)",
-  PRE_SEASON: "pre-season (high training load, fuel hard sessions)",
-  IN_SEASON: "in-season (matches every week, recover and stay fresh)",
+  OFF_SEASON: "off-season (active recovery after the season, keep body composition in check)",
+  GENERAL_PREP: "general preparation phase (high training volume, building strength and work capacity)",
+  SPECIFIC_PREP: "specific preparation phase (hard sport-specific training, fuel hard sessions)",
+  PRE_COMPETITION: "pre-competition phase (high-intensity power and speed work and friendlies, fuel and recover)",
+  COMPETITION: "competition phase (matches every week, recover and stay fresh)",
 };
 
 type GenMeal = { slot: Slot; name: string; items: { foodId: string; grams: number }[] };

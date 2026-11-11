@@ -54,6 +54,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ locale
         title={t.has(`focus.${day.focus}`) ? t(`focus.${day.focus}`) : day.focus}
         subtitle={`${format.dateTime(new Date(`${day.day}T12:00:00Z`), { weekday: "long", day: "numeric", month: "long" })}${day.isDeload ? ` · ${t("deload")}` : ""}`}
       />
+      {day.editedAt && <p className="footnote mb-4 rounded-2xl bg-tonal px-4 py-3 text-accent">{t("editedByCoach")}</p>}
       <WorkoutLogger
         dayId={day.id}
         workoutId={workout?.id ?? null}

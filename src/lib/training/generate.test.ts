@@ -2,15 +2,16 @@ import { describe, expect, it } from "vitest";
 import { buildWeekTemplate, generateProgram, prescribe, type ProgramContext, type TrainingPrefInput } from "./generate";
 import { EXERCISES } from "./library";
 import { classifyDay, isHardOnLegs } from "./sessions";
+import { SEASON_PHASES } from "./phases";
 import { weekdayOf } from "../dates";
 
 const base: TrainingPrefInput = { weekdays: [0, 2, 4], sessionMinutes: 60, experience: "INTERMEDIATE", equipment: "GYM", injuries: [] };
-const football: ProgramContext = { sport: "football", phase: "OFF_SEASON", matchWeekdays: [] };
+const football: ProgramContext = { sport: "football", phase: "SPECIFIC_PREP", matchWeekdays: [] };
 const byId = new Map(EXERCISES.map((e) => [e.id, e]));
 const BODYBUILDING = ["pec-deck", "cable-fly", "barbell-curl", "skull-crusher", "lateral-raise", "cable-kickback", "leg-extension"];
 
 describe("S&C generator", () => {
-  it("off-season team sport, 3 days: lower, upper, power & speed", () => {
+  it("specific-prep team sport, 3 days: lower, upper, power & speed", () => {
     const t = buildWeekTemplate(base, football, EXERCISES);
     expect(t.map((d) => d.focus)).toEqual(["STRENGTH_LOWER", "STRENGTH_UPPER", "POWER_SPEED"]);
     t.forEach((d) => expect(d.exercises.length).toBeGreaterThan(2));
@@ -21,42 +22,49 @@ describe("S&C generator", () => {
   });
 
   it("endurance athletes get no extra conditioning sessions", () => {
-    for (const phase of ["OFF_SEASON", "PRE_SEASON", "IN_SEASON"] as const) {
+    for (const phase of SEASON_PHASES) {
       const t = buildWeekTemplate({ ...base, weekdays: [0, 1, 3, 5] }, { sport: "swimming", phase, matchWeekdays: [] }, EXERCISES);
       expect(t.some((d) => d.focus === "CONDITIONING"), phase).toBe(false);
     }
   });
 
   it("combat sports add grip and neck work", () => {
-    const t = buildWeekTemplate({ ...base, weekdays: [0] }, { sport: "wrestling", phase: "OFF_SEASON", matchWeekdays: [] }, EXERCISES);
+    const t = buildWeekTemplate({ ...base, weekdays: [0] }, { sport: "wrestling", phase: "GENERAL_PREP", matchWeekdays: [] }, EXERCISES);
     const ids = t[0].exercises.map((e) => e.exerciseId);
     expect(ids).toContain("neck-isometric");
     expect(ids).toContain("farmer-carry");
   });
 
   it("respects injuries and holds back technical lifts for beginners", () => {
-    const t = buildWeekTemplate({ ...base, injuries: ["KNEE"], experience: "BEGINNER" }, { ...football, phase: "PRE_SEASON" }, EXERCISES);
+    const t = buildWeekTemplate({ ...base, injuries: ["KNEE"], experience: "BEGINNER" }, { ...football, phase: "PRE_COMPETITION" }, EXERCISES);
     for (const e of t.flatMap((d) => d.exercises)) {
       expect(byId.get(e.exerciseId)!.stresses).not.toContain("KNEE");
       expect(["hang-power-clean", "depth-jump"]).not.toContain(e.exerciseId);
     }
   });
 
-  it("loads strength by phase: off-season volume, pre-season heavy, in-season low volume", () => {
+  it("loads strength by phase: off-season light, general prep volume, heavier towards competition, competition low volume", () => {
     const squat = byId.get("back-squat")!;
-    const off = prescribe(squat, "strength", "OFF_SEASON", "INTERMEDIATE");
-    const pre = prescribe(squat, "strength", "PRE_SEASON", "INTERMEDIATE");
-    const inS = prescribe(squat, "strength", "IN_SEASON", "INTERMEDIATE");
-    expect([off.repMin, off.repMax]).toEqual([6, 8]);
+    const [off, gen, spec, pre, comp] = SEASON_PHASES.map((p) => prescribe(squat, "strength", p, "INTERMEDIATE"));
+    expect(off.sets).toBeLessThan(gen.sets);
+    expect(off.targetRpe).toBeLessThan(gen.targetRpe);
+    expect([gen.repMin, gen.repMax]).toEqual([6, 8]);
+    expect(spec.repMax).toBeLessThan(gen.repMax);
     expect(pre.repMax).toBeLessThanOrEqual(5);
-    expect(pre.targetRpe).toBeGreaterThan(off.targetRpe);
-    expect(inS.sets).toBeLessThan(off.sets);
+    expect(pre.targetRpe).toBeGreaterThan(gen.targetRpe);
+    expect(comp.sets).toBeLessThan(gen.sets);
+  });
+
+  it("off-season is active recovery: no back-to-back heavy days, prehab and mobility included", () => {
+    const t = buildWeekTemplate(base, { ...football, phase: "OFF_SEASON" }, EXERCISES);
+    expect(t.map((d) => d.focus)).toContain("PREHAB_MOBILITY");
+    expect(t.filter((d) => d.focus === "STRENGTH_LOWER")).toHaveLength(0);
   });
 
   it("prescribes sprints by distance and holds by seconds", () => {
-    const sprint = prescribe(byId.get("acceleration-sprint")!, "speed", "PRE_SEASON", "INTERMEDIATE");
+    const sprint = prescribe(byId.get("acceleration-sprint")!, "speed", "PRE_COMPETITION", "INTERMEDIATE");
     expect(sprint).toMatchObject({ repMin: 1, repMax: 1, distanceM: 20 });
-    const plank = prescribe(byId.get("copenhagen-plank")!, "prehab", "IN_SEASON", "INTERMEDIATE");
+    const plank = prescribe(byId.get("copenhagen-plank")!, "prehab", "COMPETITION", "INTERMEDIATE");
     expect(plank.repMin).toBeGreaterThanOrEqual(20);
     expect(plank.distanceM).toBeNull();
   });
@@ -69,7 +77,7 @@ describe("match-day scheduling", () => {
   });
 
   it("no heavy leg or plyometric session in the 2 days before a match, recovery only the day after", () => {
-    const ctx: ProgramContext = { sport: "football", phase: "IN_SEASON", matchWeekdays: [5] };
+    const ctx: ProgramContext = { sport: "football", phase: "COMPETITION", matchWeekdays: [5] };
     const t = buildWeekTemplate({ ...base, weekdays: [3, 4, 6] }, ctx, EXERCISES);
     const byDay = new Map(t.map((d) => [d.weekday, d.focus]));
     expect(isHardOnLegs(byDay.get(3)!)).toBe(false);
@@ -78,7 +86,7 @@ describe("match-day scheduling", () => {
   });
 
   it("keeps the main strength session on a free day", () => {
-    const ctx: ProgramContext = { sport: "football", phase: "IN_SEASON", matchWeekdays: [5] };
+    const ctx: ProgramContext = { sport: "football", phase: "COMPETITION", matchWeekdays: [5] };
     const t = buildWeekTemplate({ ...base, weekdays: [1, 4] }, ctx, EXERCISES);
     expect(t.find((d) => d.weekday === 1)!.focus).toBe("TOTAL_STRENGTH_POWER");
     expect(isHardOnLegs(t.find((d) => d.weekday === 4)!.focus)).toBe(false);
@@ -98,9 +106,11 @@ describe("match-day scheduling", () => {
     expect(rpe(3)).toBeGreaterThan(rpe(1));
   });
 
-  it("in-season effort stays flat across weeks 1-3", () => {
-    const days = generateProgram(base, { ...football, phase: "IN_SEASON" }, EXERCISES, "2026-11-01");
-    const first = (w: number) => days.find((d) => d.weekNumber === w)!.exercises.map((e) => e.targetRpe);
-    expect(first(3)).toEqual(first(1));
+  it("competition and off-season effort stays flat across weeks 1-3", () => {
+    for (const phase of ["COMPETITION", "OFF_SEASON"] as const) {
+      const days = generateProgram(base, { ...football, phase }, EXERCISES, "2026-11-01");
+      const first = (w: number) => days.find((d) => d.weekNumber === w)!.exercises.map((e) => e.targetRpe);
+      expect(first(3), phase).toEqual(first(1));
+    }
   });
 });

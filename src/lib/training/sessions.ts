@@ -37,39 +37,53 @@ const P: SessionType = "POWER_SPEED", C: SessionType = "CONDITIONING", R: Sessio
 
 /**
  * Weekly templates by sport category and season phase.
- * Team sports get their conditioning from practice in-season, endurance athletes from their sport,
- * so those templates spend S&C time on strength, power and injury prevention.
+ * Off-season is active recovery (less heavy work, more prehab and mobility). General preparation builds
+ * strength and work capacity, specific preparation adds power, pre-competition converts to power and speed,
+ * competition maintains. Team sports get their conditioning from practice in the competition phase,
+ * endurance athletes from their sport, so those templates spend S&C time on strength, power and injury prevention.
  */
 export const WEEK_TEMPLATES: Record<SportCategory, Table> = {
   TEAM: {
-    OFF_SEASON: [[T], [L, U], [L, U, P], [L, U, P, C]],
-    PRE_SEASON: [[T], [T, P], [L, U, P], [L, U, P, R]],
-    IN_SEASON: [[T], [T, R], [T, P, R], [T, P, U, R]],
+    OFF_SEASON: [[T], [T, R], [T, C, R], [L, U, C, R]],
+    GENERAL_PREP: [[T], [L, U], [L, U, C], [L, U, C, P]],
+    SPECIFIC_PREP: [[T], [L, U], [L, U, P], [L, U, P, C]],
+    PRE_COMPETITION: [[T], [T, P], [L, U, P], [L, U, P, R]],
+    COMPETITION: [[T], [T, R], [T, P, R], [T, P, U, R]],
   },
   RACKET: {
-    OFF_SEASON: [[T], [L, U], [L, U, P], [L, U, P, C]],
-    PRE_SEASON: [[T], [T, P], [L, U, P], [L, U, P, R]],
-    IN_SEASON: [[T], [T, R], [T, P, R], [T, P, U, R]],
+    OFF_SEASON: [[T], [T, R], [T, C, R], [L, U, C, R]],
+    GENERAL_PREP: [[T], [L, U], [L, U, C], [L, U, C, P]],
+    SPECIFIC_PREP: [[T], [L, U], [L, U, P], [L, U, P, C]],
+    PRE_COMPETITION: [[T], [T, P], [L, U, P], [L, U, P, R]],
+    COMPETITION: [[T], [T, R], [T, P, R], [T, P, U, R]],
   },
   ENDURANCE: {
-    OFF_SEASON: [[T], [L, U], [L, U, R], [L, U, T, R]],
-    PRE_SEASON: [[T], [T, R], [L, U, R], [L, U, P, R]],
-    IN_SEASON: [[T], [T, R], [T, U, R], [T, U, R, R]],
+    OFF_SEASON: [[T], [T, R], [T, U, R], [L, U, R, R]],
+    GENERAL_PREP: [[T], [L, U], [L, U, R], [L, U, T, R]],
+    SPECIFIC_PREP: [[T], [L, U], [L, U, R], [L, U, P, R]],
+    PRE_COMPETITION: [[T], [T, R], [L, U, R], [L, U, P, R]],
+    COMPETITION: [[T], [T, R], [T, U, R], [T, U, R, R]],
   },
   SPEED_POWER: {
-    OFF_SEASON: [[T], [L, U], [L, U, P], [L, U, P, T]],
-    PRE_SEASON: [[P], [P, T], [P, L, U], [P, L, U, P]],
-    IN_SEASON: [[P], [P, T], [P, T, R], [P, T, U, R]],
+    OFF_SEASON: [[T], [T, R], [T, P, R], [L, U, P, R]],
+    GENERAL_PREP: [[T], [L, U], [L, U, C], [L, U, P, C]],
+    SPECIFIC_PREP: [[T], [L, U], [L, U, P], [L, U, P, T]],
+    PRE_COMPETITION: [[P], [P, T], [P, L, U], [P, L, U, P]],
+    COMPETITION: [[P], [P, T], [P, T, R], [P, T, U, R]],
   },
   COMBAT: {
-    OFF_SEASON: [[T], [L, U], [L, U, C], [L, U, C, P]],
-    PRE_SEASON: [[T], [T, C], [T, C, P], [T, C, P, U]],
-    IN_SEASON: [[T], [T, R], [T, C, R], [T, C, U, R]],
+    OFF_SEASON: [[T], [T, R], [T, C, R], [L, U, C, R]],
+    GENERAL_PREP: [[T], [L, U], [L, U, C], [L, U, C, P]],
+    SPECIFIC_PREP: [[T], [T, C], [L, U, C], [L, U, C, P]],
+    PRE_COMPETITION: [[T], [T, C], [T, C, P], [T, C, P, U]],
+    COMPETITION: [[T], [T, R], [T, C, R], [T, C, U, R]],
   },
   OTHER: {
-    OFF_SEASON: [[T], [L, U], [L, U, P], [L, U, P, R]],
-    PRE_SEASON: [[T], [T, P], [L, U, P], [L, U, P, R]],
-    IN_SEASON: [[T], [T, R], [T, P, R], [T, P, U, R]],
+    OFF_SEASON: [[T], [T, R], [T, P, R], [L, U, P, R]],
+    GENERAL_PREP: [[T], [L, U], [L, U, C], [L, U, C, R]],
+    SPECIFIC_PREP: [[T], [L, U], [L, U, P], [L, U, P, R]],
+    PRE_COMPETITION: [[T], [T, P], [L, U, P], [L, U, P, R]],
+    COMPETITION: [[T], [T, R], [T, P, R], [T, P, U, R]],
   },
 };
 

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { actionCoach, managedAthlete } from "@/lib/auth/guards";
 import { rebuildUpcomingMeals, rebuildUpcomingProgram } from "@/lib/plan/service";
 import { newInviteCode } from "@/lib/team";
+import { SEASON_PHASES } from "@/lib/training/phases";
 import type { FormState } from "./auth";
 
 const days = (form: FormData, key: string) =>
@@ -14,7 +15,7 @@ const days = (form: FormData, key: string) =>
 
 const teamSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  phase: z.enum(["OFF_SEASON", "PRE_SEASON", "IN_SEASON"]),
+  phase: z.enum(SEASON_PHASES),
 });
 
 const sameDays = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);

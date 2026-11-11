@@ -59,21 +59,27 @@ type Dose = { sets: number; repMin: number; repMax: number; rpe: number; rest: n
 const d = (sets: number, repMin: number, repMax: number, rpe: number, rest: number): Dose => ({ sets, repMin, repMax, rpe, rest });
 
 /**
- * Loading by role and season phase.
- * Off-season builds strength (moderate reps, more volume), pre-season converts it to power
- * (heavy, low reps, more plyometrics), in-season maintains it with low volume.
+ * Loading by role and season phase (classic periodization):
+ * - off-season: active recovery, low volume and intensity, fix weak spots
+ * - general preparation: build strength and work capacity (moderate reps, most volume)
+ * - specific preparation: heavier strength, more power and sport-specific conditioning
+ * - pre-competition: convert strength to power and speed (heavy, low reps, more plyometrics)
+ * - competition: maintain with low volume, stay fresh for matches
  */
 const DOSE: Record<Role, Record<SeasonPhase, Dose>> = {
-  power: { OFF_SEASON: d(3, 4, 5, 7, 150), PRE_SEASON: d(4, 2, 3, 7.5, 180), IN_SEASON: d(3, 2, 3, 7, 150) },
-  strength: { OFF_SEASON: d(4, 6, 8, 7.5, 150), PRE_SEASON: d(4, 3, 5, 8, 180), IN_SEASON: d(3, 3, 5, 7, 150) },
-  accessory: { OFF_SEASON: d(3, 8, 12, 7, 90), PRE_SEASON: d(3, 6, 8, 7.5, 90), IN_SEASON: d(2, 6, 8, 7, 90) },
-  plyo: { OFF_SEASON: d(3, 5, 5, 7, 90), PRE_SEASON: d(4, 4, 5, 7.5, 90), IN_SEASON: d(3, 3, 4, 7, 90) },
-  speed: { OFF_SEASON: d(4, 1, 1, 8, 120), PRE_SEASON: d(6, 1, 1, 9, 150), IN_SEASON: d(4, 1, 1, 8.5, 150) },
-  conditioning: { OFF_SEASON: d(8, 30, 30, 8, 60), PRE_SEASON: d(10, 30, 30, 8.5, 60), IN_SEASON: d(6, 30, 30, 8, 60) },
-  core: { OFF_SEASON: d(3, 8, 12, 7, 60), PRE_SEASON: d(3, 8, 10, 7, 60), IN_SEASON: d(2, 8, 10, 7, 60) },
-  prehab: { OFF_SEASON: d(3, 8, 10, 6.5, 60), PRE_SEASON: d(3, 6, 8, 6.5, 60), IN_SEASON: d(2, 6, 8, 6.5, 60) },
-  mobility: { OFF_SEASON: d(2, 6, 8, 5, 30), PRE_SEASON: d(2, 6, 8, 5, 30), IN_SEASON: d(2, 6, 8, 5, 30) },
+  power: { OFF_SEASON: d(2, 3, 5, 6, 120), GENERAL_PREP: d(3, 4, 5, 7, 150), SPECIFIC_PREP: d(4, 3, 4, 7.5, 180), PRE_COMPETITION: d(4, 2, 3, 7.5, 180), COMPETITION: d(3, 2, 3, 7, 150) },
+  strength: { OFF_SEASON: d(3, 8, 10, 6.5, 120), GENERAL_PREP: d(4, 6, 8, 7.5, 150), SPECIFIC_PREP: d(4, 4, 6, 8, 180), PRE_COMPETITION: d(4, 3, 5, 8, 180), COMPETITION: d(3, 3, 5, 7, 150) },
+  accessory: { OFF_SEASON: d(2, 10, 15, 6.5, 60), GENERAL_PREP: d(3, 8, 12, 7, 90), SPECIFIC_PREP: d(3, 6, 10, 7.5, 90), PRE_COMPETITION: d(3, 6, 8, 7.5, 90), COMPETITION: d(2, 6, 8, 7, 90) },
+  plyo: { OFF_SEASON: d(2, 4, 5, 6, 90), GENERAL_PREP: d(3, 5, 5, 7, 90), SPECIFIC_PREP: d(4, 4, 5, 7.5, 90), PRE_COMPETITION: d(4, 4, 5, 7.5, 90), COMPETITION: d(3, 3, 4, 7, 90) },
+  speed: { OFF_SEASON: d(3, 1, 1, 7, 120), GENERAL_PREP: d(4, 1, 1, 8, 120), SPECIFIC_PREP: d(5, 1, 1, 8.5, 150), PRE_COMPETITION: d(6, 1, 1, 9, 150), COMPETITION: d(4, 1, 1, 8.5, 150) },
+  conditioning: { OFF_SEASON: d(6, 30, 30, 7, 60), GENERAL_PREP: d(8, 30, 30, 8, 60), SPECIFIC_PREP: d(10, 30, 30, 8.5, 60), PRE_COMPETITION: d(10, 30, 30, 8.5, 60), COMPETITION: d(6, 30, 30, 8, 60) },
+  core: { OFF_SEASON: d(2, 10, 12, 6.5, 60), GENERAL_PREP: d(3, 8, 12, 7, 60), SPECIFIC_PREP: d(3, 8, 10, 7, 60), PRE_COMPETITION: d(3, 8, 10, 7, 60), COMPETITION: d(2, 8, 10, 7, 60) },
+  prehab: { OFF_SEASON: d(3, 10, 12, 6, 60), GENERAL_PREP: d(3, 8, 10, 6.5, 60), SPECIFIC_PREP: d(3, 8, 10, 6.5, 60), PRE_COMPETITION: d(3, 6, 8, 6.5, 60), COMPETITION: d(2, 6, 8, 6.5, 60) },
+  mobility: { OFF_SEASON: d(2, 6, 8, 5, 30), GENERAL_PREP: d(2, 6, 8, 5, 30), SPECIFIC_PREP: d(2, 6, 8, 5, 30), PRE_COMPETITION: d(2, 6, 8, 5, 30), COMPETITION: d(2, 6, 8, 5, 30) },
 };
+
+/** Phases where advanced athletes get an extra strength set (not recovery or match weeks). */
+const BUILD_PHASES = new Set<SeasonPhase>(["GENERAL_PREP", "SPECIFIC_PREP", "PRE_COMPETITION"]);
 
 /** Work interval in seconds for TIME exercises, by role. */
 const SECONDS: Partial<Record<Role, [number, number]>> = {
@@ -87,7 +93,7 @@ export function prescribe(ex: Pick<LibraryExercise, "id" | "measure">, role: Rol
   let sets = base.sets;
   if (LOADED_ROLES.has(role)) {
     if (experience === "BEGINNER") sets = Math.max(2, sets - 1);
-    if (experience === "ADVANCED" && role === "strength" && phase !== "IN_SEASON") sets = Math.min(5, sets + 1);
+    if (experience === "ADVANCED" && role === "strength" && BUILD_PHASES.has(phase)) sets = Math.min(5, sets + 1);
   }
   let { repMin, repMax } = base;
   let distanceM: number | null = null;
@@ -135,8 +141,10 @@ export function buildWeekTemplate(pref: TrainingPrefInput, ctx: ProgramContext, 
   });
 }
 
-/** RPE added in weeks 1-3; in-season stays flat to keep athletes fresh for matches. */
-const RAMP: Record<SeasonPhase, number[]> = { OFF_SEASON: [0, 0.5, 1], PRE_SEASON: [0, 0.5, 1], IN_SEASON: [0, 0, 0] };
+/** RPE added in weeks 1-3; off-season and competition stay flat (recovery, fresh for matches). */
+const RAMP: Record<SeasonPhase, number[]> = {
+  OFF_SEASON: [0, 0, 0], GENERAL_PREP: [0, 0.5, 1], SPECIFIC_PREP: [0, 0.5, 1], PRE_COMPETITION: [0, 0.5, 1], COMPETITION: [0, 0, 0],
+};
 const DELOAD_RPE = 6;
 
 /** 4-week block: weeks 1-3 build, week 4 deloads (~60% sets, RPE 6). */

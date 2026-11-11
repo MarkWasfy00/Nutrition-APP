@@ -12,7 +12,8 @@
     "label": "Main",
     "athletes": "Athletes",
     "team": "Team",
-    "billing": "Billing"
+    "billing": "Billing",
+    "schedule": "Schedule"
   },
   "landing": {
     "login": "Log in",
@@ -388,9 +389,32 @@
     "minutes": "{n} min",
     "phases": {
       "OFF_SEASON": "Off-season",
-      "PRE_SEASON": "Pre-season",
-      "IN_SEASON": "In-season"
-    }
+      "GENERAL_PREP": "General preparation",
+      "SPECIFIC_PREP": "Specific preparation",
+      "PRE_COMPETITION": "Pre-competition",
+      "COMPETITION": "Competition"
+    },
+    "patterns": {
+      "power": "Power",
+      "squat": "Squat",
+      "hinge": "Hinge",
+      "single-leg": "Single leg",
+      "push": "Push",
+      "pull": "Pull",
+      "jump": "Jumps",
+      "throw": "Throws",
+      "sprint": "Sprints",
+      "agility": "Agility",
+      "conditioning": "Conditioning",
+      "core": "Core",
+      "carry": "Carries",
+      "prehab": "Injury prevention",
+      "neck": "Neck",
+      "mobility": "Mobility"
+    },
+    "editedByCoach": "Your coach adjusted this session.",
+    "byCoach": "Coach edit",
+    "schedule": "Schedule"
   },
   "workout": {
     "start": "Start workout",
@@ -449,7 +473,9 @@
       "invalid": "Please check the values.",
       "planFailed": "We couldn't build your plan. Please try again.",
       "noProfile": "This athlete hasn't completed their profile yet.",
-      "CONSENT_REQUIRED": "Your coach needs to confirm guardian consent first."
+      "CONSENT_REQUIRED": "Your coach needs to confirm guardian consent first.",
+      "range": "Enter a value between {min} and {max}.",
+      "fatMassTooHigh": "Body fat mass must be less than your weight."
     },
     "notInbody": "This doesn't look like an InBody sheet. Check the values carefully.",
     "lowConfidence": "Some values were hard to read. Please double-check them.",
@@ -666,9 +692,11 @@
     "teamName": "Team name",
     "phase": "Season phase",
     "phaseHints": {
-      "OFF_SEASON": "Build strength and work capacity. Higher gym volume.",
-      "PRE_SEASON": "Convert strength to power and speed. Heavy, low reps, more plyometrics.",
-      "IN_SEASON": "Keep strength and stay fresh for matches. Low volume."
+      "OFF_SEASON": "Recover from the season. Lower volume and intensity, more prehab and mobility, fix weak spots.",
+      "GENERAL_PREP": "Build general strength and work capacity. Highest gym volume.",
+      "SPECIFIC_PREP": "Heavier strength work and sport-specific conditioning. Power work starts.",
+      "PRE_COMPETITION": "Convert strength to power and speed. Heavy, low reps, more plyometrics.",
+      "COMPETITION": "Keep strength and stay fresh for matches. Low volume."
     },
     "practiceDays": "Team practice days",
     "matchDays": "Match days",
@@ -679,6 +707,267 @@
     "errors": {
       "invalid": "Please check the details.",
       "tooManyMatches": "Choose at most 3 match days a week."
+    }
+  },
+  "coachTraining": {
+    "title": "Training",
+    "editTraining": "Edit training",
+    "editTrainingHint": "Change exercises, sets, reps, effort and rest for any session",
+    "exerciseN": "Exercise {n}",
+    "sets": "Sets",
+    "repsFrom": "Reps from",
+    "repsTo": "Reps to",
+    "secondsFrom": "Sec from",
+    "secondsTo": "Sec to",
+    "distance": "Metres",
+    "rpe": "RPE",
+    "rest": "Rest (s)",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "removeExercise": "Remove {name}",
+    "addExercise": "Add exercise",
+    "injuryWarn": "This exercise loads one of the athlete's injuries.",
+    "injuries": "{name} is working around: {list}. Exercises marked ⚠ load those areas.",
+    "applyForward": "Also apply to this session in later weeks ({n})",
+    "applyForwardHint": "Same weekday and session type. Deload weeks get fewer sets and RPE 6 at most. Sessions the athlete has started are left alone.",
+    "save": "Save session",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "edited": "Edited",
+    "saved": "Session saved. The athlete sees the change right away.",
+    "resetDone": "Session reset to the generated program.",
+    "removed": "Session removed.",
+    "reset": "Reset to generated session",
+    "resetHint": "Reset replaces your changes with the session generated for the current season phase and match days.",
+    "removeSession": "Remove session",
+    "removeHint": "Removing a session can't be undone, but you can rebuild the program by adding a new InBody scan.",
+    "locked": "{name} already finished this session, so it can't be changed.",
+    "noSessions": "No S&C sessions this week.",
+    "deloadNote": "Deload week: fewer sets and lighter effort.",
+    "listHint": "Sessions you edit are kept when you change the season phase or match days. Reset a session to follow the generated program again.",
+    "errors": {
+      "invalid": "Check the highlighted exercise: reps 'to' must be at least reps 'from', and every value must be within its limits.",
+      "logged": "The athlete already finished this session, so it can't be changed."
+    }
+  },
+  "schedule": {
+    "title": "Schedule",
+    "add": "Add session",
+    "addOwn": "Add your own session",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "views": "Sessions",
+    "kinds": {
+      "PRACTICE": "Practice",
+      "MATCH": "Match",
+      "SC": "S&C",
+      "RECOVERY": "Recovery",
+      "OTHER": "Other"
+    },
+    "kind": "Type",
+    "titleLabel": "Title (optional)",
+    "titlePlaceholder": "e.g. Tactical session",
+    "date": "Date",
+    "start": "Start time",
+    "duration": "Duration (min)",
+    "location": "Location (optional)",
+    "locationPlaceholder": "e.g. Main pitch",
+    "notes": "Notes (optional)",
+    "for": "For",
+    "wholeTeam": "Whole team",
+    "personal": "Personal",
+    "addedByAthlete": "added by the athlete",
+    "save": "Save session",
+    "saving": "Saving…",
+    "delete": "Delete session",
+    "deleteHint": "Deleting a session also deletes its attendance.",
+    "edit": "Edit session",
+    "newTitle": "New session",
+    "editTitle": "Edit session",
+    "ownHint": "Your coach sees your sessions and can record attendance.",
+    "saved": "Session saved.",
+    "deleted": "Session deleted.",
+    "emptyPast": "No past sessions.",
+    "emptyUpcoming": "No upcoming sessions.",
+    "todayLabel": "Today",
+    "attendance": "Attendance",
+    "attendanceFor": "Attendance for {name}",
+    "present": "Present",
+    "absent": "Absent",
+    "notMarked": "Not recorded",
+    "markAllPresent": "All present",
+    "saveAttendance": "Save attendance",
+    "attendanceSaved": "Attendance saved.",
+    "summary": "{present, number} present · {absent, number} absent · {unmarked, number} not marked",
+    "presentOf": "{present, number}/{expected, number}",
+    "takeAttendance": "Take attendance",
+    "attendanceOpens": "You can take attendance from {date}.",
+    "noAthletes": "No athletes in the team yet.",
+    "rateLine": "Attendance {rate}% · {present, number} of {total, number} sessions",
+    "rateDetail": "Present at {present, number} of {total, number} recorded sessions",
+    "noRecords": "No attendance recorded yet",
+    "today": "Today's sessions",
+    "noneToday": "No sessions today",
+    "openSchedule": "Open schedule",
+    "addFor": "Add a session for {name}",
+    "athleteHint": "You can change or delete sessions you added until your coach records attendance.",
+    "errors": {
+      "invalid": "Please check the details.",
+      "dayRange": "Pick a date within the last 60 days or the next year.",
+      "tooEarly": "Attendance opens on the day of the session."
+    }
+  },
+  "biomotor": {
+    "title": "Biomotor tests",
+    "short": "Tests",
+    "abilities": {
+      "STRENGTH": "Strength",
+      "POWER": "Power",
+      "SPEED": "Speed",
+      "AGILITY": "Agility",
+      "ENDURANCE": "Endurance",
+      "FLEXIBILITY": "Flexibility"
+    },
+    "units": {
+      "kg": "kg",
+      "cm": "cm",
+      "m": "m",
+      "s": "s",
+      "reps": "reps"
+    },
+    "tests": {
+      "back-squat-1rm": {
+        "name": "Back squat 1RM",
+        "protocol": "Heaviest single at full depth with good technique, or estimate it from a 3–5 rep max."
+      },
+      "bench-press-1rm": {
+        "name": "Bench press 1RM",
+        "protocol": "Heaviest single with the bar touching the chest. Use a spotter."
+      },
+      "handgrip": {
+        "name": "Handgrip strength",
+        "protocol": "Dynamometer, dominant hand, arm by the side. Best of 3."
+      },
+      "push-ups": {
+        "name": "Max push-ups",
+        "protocol": "Most reps without rest, body straight, chest to fist height."
+      },
+      "cmj": {
+        "name": "Countermovement jump",
+        "protocol": "Hands on hips, dip and jump as high as possible. Best of 3."
+      },
+      "broad-jump": {
+        "name": "Standing broad jump",
+        "protocol": "Two-foot take-off and landing. Measure to the back heel. Best of 3."
+      },
+      "mb-chest-throw": {
+        "name": "Medicine ball chest throw (3 kg)",
+        "protocol": "Seated with the back to a wall, push from the chest. Best of 3."
+      },
+      "sprint-10m": {
+        "name": "10 m sprint",
+        "protocol": "Standing start 0.5 m behind the line, timing gates if available. Best of 2."
+      },
+      "sprint-30m": {
+        "name": "30 m sprint",
+        "protocol": "Standing start 0.5 m behind the line. Best of 2 with full rest."
+      },
+      "t-test": {
+        "name": "T-test",
+        "protocol": "Sprint 10 m, shuffle 5 m left, 10 m right, 5 m left, backpedal 10 m."
+      },
+      "pro-agility": {
+        "name": "5-10-5 pro agility",
+        "protocol": "Start on the middle line: 5 m one way, 10 m back, 5 m to finish. Touch each line."
+      },
+      "illinois": {
+        "name": "Illinois agility test",
+        "protocol": "10 × 5 m course weaving through 4 cones, starting lying face down."
+      },
+      "yoyo-ir1": {
+        "name": "Yo-Yo intermittent recovery 1",
+        "protocol": "Audio-paced 2 × 20 m shuttles with 10 s active recovery. Record total distance."
+      },
+      "cooper-12min": {
+        "name": "Cooper 12-minute run",
+        "protocol": "Run as far as possible in 12 minutes on a measured track."
+      },
+      "sit-and-reach": {
+        "name": "Sit and reach",
+        "protocol": "Legs straight, reach slowly and hold 2 s. 0 cm = toes; short of the toes is negative."
+      }
+    },
+    "add": "Assign tests",
+    "addFor": "Assign tests to {name}",
+    "newTitle": "New test assignment",
+    "editTitle": "Edit assignment",
+    "edit": "Edit assignment",
+    "views": "Assignments",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "emptyUpcoming": "No upcoming tests.",
+    "emptyPast": "No past tests.",
+    "titleLabel": "Title (optional)",
+    "titlePlaceholder": "e.g. Pre-season testing",
+    "date": "Testing day",
+    "for": "For",
+    "wholeTeam": "Whole team",
+    "personal": "Just you",
+    "testsLabel": "Tests",
+    "testsHint": "Pick the tests to run on the day.",
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "e.g. 15 min warm-up, 2 attempts, best counts",
+    "save": "Save assignment",
+    "saving": "Saving…",
+    "delete": "Delete assignment",
+    "deleteHint": "Deleting an assignment also deletes its results.",
+    "saved": "Assignment saved.",
+    "deleted": "Assignment deleted.",
+    "todayLabel": "Today",
+    "testCount": "{n, plural, one {# test} other {# tests}}",
+    "progress": "{done, number}/{total, number}",
+    "toDo": "To do",
+    "done": "Done",
+    "results": "Results",
+    "report": "Report",
+    "resultsOpen": "You can enter results from {date}.",
+    "saveResults": "Save results",
+    "resultsSaved": "Results saved.",
+    "scoreFor": "{test} for {name}",
+    "noAthletes": "No athletes in the team yet.",
+    "byCoach": "Entered by your coach",
+    "selfNote": "• entered by the athlete",
+    "howTo": "How to test",
+    "teamMean": "Average",
+    "best": "Best",
+    "tested": "{n, number} of {total, number} tested",
+    "noResults": "No results yet.",
+    "print": "Print report",
+    "athlete": "Athlete",
+    "profile": "Biomotor profile",
+    "profileHint": "Each ability is scored 0–100 against the squad's latest results (50 = middle of the squad). These are not age or sport norms.",
+    "profileEmpty": "The profile appears once teammates have results on the same tests.",
+    "scoreLine": "{n, plural, one {from # test} other {from # tests}}",
+    "noScore": "No data",
+    "pb": "Best {value}",
+    "testedOn": "Tested {date}",
+    "history": "History",
+    "improved": "Improved",
+    "worse": "Down",
+    "same": "No change",
+    "noReport": "No test results yet. Your coach assigns tests; enter your scores on the testing day.",
+    "noReportCoach": "No test results for {name} yet.",
+    "reportFor": "Report for {name}",
+    "rowSubtitle": "{n, plural, one {# result} other {# results}} · last tested {date}",
+    "rowEmpty": "No results yet",
+    "coachRow": "Assign field tests and see the squad report",
+    "athleteHint": "Enter your score after each test. Your coach can change any score; you can't change one your coach entered.",
+    "errors": {
+      "invalid": "Please check the details.",
+      "dayRange": "Pick a date within the last 60 days or the next year.",
+      "noTests": "Pick at least one test.",
+      "invalidScore": "A score is out of range. Check the values and units.",
+      "tooEarly": "Results open on the testing day."
     }
   }
 }
